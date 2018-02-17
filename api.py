@@ -1,6 +1,7 @@
 from flask import Flask
 from flask_restful import Resource, Api
 from sqlalchemy import create_engine
+from flask_jsonpify import jsonify
 import logging
 import sys
 
@@ -27,7 +28,8 @@ class Bocadillos(Resource):
         logging.info("Devuelve lista de bocadillos")
         conn = db_connect.connect()
         query = conn.execute("SELECT * FROM Bocadillo")
-        return {'Bocadillos': [i for i in query.cursor.fetchall()]}
+        return jsonify({'Bocadillos': [dict(zip(query.keys(), i))
+                                       for i in query.cursor.fetchall()]})
 
 
 api.add_resource(Bocadillos, '/getBocadillos')
