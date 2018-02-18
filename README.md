@@ -37,16 +37,75 @@ Funciones ofrecidas por la API
 
 La API REST que proporciona acceso a las diferentes funciones que aquí se muestran está accesible a través de **mainu.eus/api**. Junto a cada función se indican los métodos soportados (`GET`, `POST`).
 
-- `/get_bocadillos` `[GET]`
+###`/get_bocadillos` `[GET]`
 
-Devuelve un `array` en formato `JSON`, donde cada elemento tiene el siguiente formato:
+Devuelve un `array` en formato `JSON` de la lista completa de bocadillos, donde cada elemento tiene el siguiente formato:
 ```
 {
   "calorias": null,
   "id": 1,
-  "izena": "Ave César",
+  "izena": null,
   "nombre": "Ave César",
   "precio": 3.50
 }
 ```
+- `calorias` indica la estimación de claorías que contiene el bocadillo.
+
+- `id` es el identificador del bocadillo (uso interno).
+
+- `izena` es el nombre del bocadillo en euskera, en caso de que varíe respecto al castellano.
+
+- `nombre` es el nombre del bocadillo en castellano.
+
+- `precio` indica el precio del bocadillo.
+
+###`/get_menu` `[GET]`
+
+Devuelve un `array` en formato `JSON` del menú del día (por lo general: tres primeros, tres segundos y un postre), donde cada elemento tiene el siguiente formato:
+```
+{
+  "actual": 1,
+  "descripcion": null,
+  "id": 2,
+  "izena": null,
+  "nombre": "Plato2",
+  "tipo": 1
+}
+```
+- `actual` indica si el plato se encuentra en el menú del día o no.
+
+- `descripcion` permite introducir una descripción del plato.
+
+- `id` es el identificador del plato (uso interno).
+
+- `izena` es el nombre del plato en euskera.
+
+- `nombre` es el nombre del plato en castellano.
+
+- `tipo` indica si es un primero (1), segundo (2) o un postre (3).
+
+###`/get_menu_summary` `[GET]`
+
+Devuelve un *diccionario* en formato `JSON` con los nombres de los platos del menú del día:
+```
+{
+  "postre": "Plato7",
+  "primeros": [
+    "Plato2",
+    "Plato4",
+    "Plato10"
+  ],
+  "segundos": [
+    "Plato5",
+    "Plato8",
+    "Plato11"
+  ]
+}
+```
+- `postre` incluye un único elemento, correspondiente al campo `nombre` del postre que se encuentre en el menú del día.
+
+- `primeros` incluye un `array` de los campos `nombre` de los primeros que se encuentren en el menú del día.
+
+- `segundos` incluye un `array` de los campos `nombre` de los segundos que se encuentren en el menú del día.
+
 > *En desarrollo...*
