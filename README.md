@@ -37,7 +37,7 @@ Funciones ofrecidas por la API
 
 La API REST que proporciona acceso a las diferentes funciones que aquí se muestran está accesible a través de **mainu.eus/api**. Junto a cada función se indican los métodos soportados (`GET`, `POST`).
 
-###`/get_bocadillos` `[GET]`
+### `/get_bocadillos` `[GET]`
 
 Devuelve un `array` en formato `JSON` de la lista completa de bocadillos, donde cada elemento tiene el siguiente formato:
 ```
@@ -59,7 +59,7 @@ Devuelve un `array` en formato `JSON` de la lista completa de bocadillos, donde 
 
 - `precio` indica el precio del bocadillo.
 
-###`/get_menu` `[GET]`
+### `/get_menu` `[GET]`
 
 Devuelve un `array` en formato `JSON` del menú del día (por lo general: tres primeros, tres segundos y un postre), donde cada elemento tiene el siguiente formato:
 ```
@@ -84,7 +84,7 @@ Devuelve un `array` en formato `JSON` del menú del día (por lo general: tres p
 
 - `tipo` indica si es un primero (1), segundo (2) o un postre (3).
 
-###`/get_menu_summary` `[GET]`
+### `/get_menu_summary` `[GET]`
 
 Devuelve un *diccionario* en formato `JSON` con los nombres de los platos del menú del día:
 ```
