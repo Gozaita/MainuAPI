@@ -52,5 +52,42 @@ def get_bocadillos():
         return None
 
 
+def fetch_menu():
+        cx = db.connect()
+        return cx.execute("SELECT * FROM Plato WHERE actual=True")
+
+
+@app.route("/get_menu", methods=["GET"])
+def get_menu():
+    logging.info("Devolviendo menú del día...")
+    try:
+        query = fetch_menu()
+        return jsonify([dict(zip(query.keys(), i))
+                       for i in query.cursor.fetchall()])
+    except Exception as e:
+        logging.exception("No se ha podido realizar la petición")
+        return None
+
+
+@app.route("/get_menu_summary", methods=["GET"])
+def get_menu_summary():
+    logging.info("Devolviendo primeros del menú del día...")
+    try:
+        menu = fetch_menu()
+        pr = []
+        sg = []
+        for p in menu:
+            if p['tipo'] == 1:
+                pr.append(p['nombre'])
+            elif p['tipo'] == 2:
+                sg.append(p['nombre'])
+            else:
+                ps = p['nombre']
+        return jsonify({'primeros': pr, 'segundos': sg, 'postre': ps})
+    except Exception as e:
+        logging.exception("No se ha podido realizar la petición")
+        return None
+
+
 if __name__ == '__main__':
     app.run(port=80)
