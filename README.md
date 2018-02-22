@@ -48,7 +48,7 @@ Devuelve un `array` en formato `JSON` de la lista de bocadillos, donde cada elem
     "Lechuga", 
     "Tomate"
   ], 
-  "nombre": "Ave C\u00e9sar", 
+  "nombre": "Ave César", 
   "precio": 2.50, 
   "puntuacion": 7.8
 }
