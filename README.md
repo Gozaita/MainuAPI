@@ -42,18 +42,14 @@ La API REST que proporciona acceso a las diferentes funciones que aquí se muest
 Devuelve un `array` en formato `JSON` de la lista de bocadillos, donde cada elemento tiene el siguiente formato:
 ```
 {
-  "id": 1, 
+  "id": 1,
   "ingredientes": [
-    "Pechuga", 
-    "Lechuga", 
+    "Pechuga",
+    "Lechuga",
     "Tomate"
-  ], 
-<<<<<<< HEAD
-  "nombre": "Ave César", 
-=======
-  "nombre": "Ave C\u00e9sar", 
->>>>>>> 0205d54be6cbb74bac1855cdd57891a853ab92f8
-  "precio": 2.50, 
+  ],
+  "nombre": "Ave César",
+  "precio": 2.50,
   "puntuacion": 7.8
 }
 ```
