@@ -48,7 +48,11 @@ Devuelve un `array` en formato `JSON` de la lista de bocadillos, donde cada elem
     "Lechuga", 
     "Tomate"
   ], 
+<<<<<<< HEAD
   "nombre": "Ave César", 
+=======
+  "nombre": "Ave C\u00e9sar", 
+>>>>>>> 0205d54be6cbb74bac1855cdd57891a853ab92f8
   "precio": 2.50, 
   "puntuacion": 7.8
 }
