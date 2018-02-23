@@ -39,25 +39,30 @@ La API REST que proporciona acceso a las diferentes funciones que aquí se muest
 
 ### `/get_bocadillos` `[GET]`
 
-Devuelve un `array` en formato `JSON` de la lista completa de bocadillos, donde cada elemento tiene el siguiente formato:
+Devuelve un `array` en formato `JSON` de la lista de bocadillos, donde cada elemento tiene el siguiente formato:
 ```
 {
-  "calorias": null,
-  "id": 1,
-  "izena": null,
-  "nombre": "Ave César",
-  "precio": 3.50
+  "id": 1, 
+  "ingredientes": [
+    "Pechuga", 
+    "Lechuga", 
+    "Tomate"
+  ], 
+  "nombre": "Ave César", 
+  "precio": 2.50, 
+  "puntuacion": 7.8
 }
 ```
-- `calorias` indica la estimación de claorías que contiene el bocadillo.
 
 - `id` es el identificador del bocadillo (uso interno).
 
-- `izena` es el nombre del bocadillo en euskera, en caso de que varíe respecto al castellano.
+- `ingredientes` es la lista de ingredientes que tiene el bocadillo.
 
 - `nombre` es el nombre del bocadillo en castellano.
 
 - `precio` indica el precio del bocadillo.
+
+- `puntuacion` es la media de la puntuación obtenida en las valoraciones.
 
 ### `/get_menu` `[GET]`
 
