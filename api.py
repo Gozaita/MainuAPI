@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from flask import Flask, jsonify
+from flask import Flask, jsonify, redirect
 from sqlalchemy import create_engine
 from time import localtime, strftime
 import os
@@ -9,11 +9,13 @@ import logging
 URI = open('.mainudb', 'r').read()
 LOG_PATH = 'log/mainu.log'
 
-SRV_PATH = 'https://www.mainu.eus/'
+SRV_PATH = 'https://server.mainu.eus/'
 IMG_PATH = SRV_PATH + 'external/images/'
 BOC_PATH = IMG_PATH + 'bocadillos/'
 PLT_PATH = IMG_PATH + 'platos/'
 OTH_PATH = IMG_PATH + 'otros/'
+
+API_MAIN = "https://www.mainu.eus/api"
 
 try:
     log = open(LOG_PATH, 'a')
@@ -48,7 +50,7 @@ app = Flask(__name__)
 
 @app.route("/get_bocadillos", methods=["GET"])
 def get_bocadillos():
-    logging.info("Devolviendo lista de bocadillos...")
+    logging.info("Devolviendo lista de bocadillos")
     try:
         cx = db.connect()
         bocs = cx.execute("SELECT * FROM Bocadillo")
@@ -73,7 +75,7 @@ def get_bocadillos():
 
 @app.route("/get_menu", methods=["GET"])
 def get_menu():
-    logging.info("Devolviendo menú del día...")
+    logging.info("Devolviendo menú del día")
     try:
         cx = db.connect()
         menu = cx.execute("SELECT * FROM Plato WHERE actual=True")
@@ -83,7 +85,8 @@ def get_menu():
             logging.debug("Plato %d" % p['id'])
             im = cx.execute("SELECT FotoPlato.ruta FROM FotoPlato WHERE " +
                             "FotoPlato.Plato_id=%d AND " % p['id'] +
-                            "FotoPlato.oficial=True").fetchone()
+                            "FotoPlato.oficial=True AND " +
+                            "FotoPlato.visible=True").fetchone()
             if im is not None:
                 img = PLT_PATH + im['ruta']
             else:
@@ -100,6 +103,12 @@ def get_menu():
     except Exception as e:
         logging.exception("No se ha podido realizar la petición")
         return None
+
+
+@app.route("/", methods=["GET"])
+def api_main():
+    logging.info("Redirigiendo a la página principal de la API")
+    return redirect(API_MAIN)
 
 
 if __name__ == '__main__':
