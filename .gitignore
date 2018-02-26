@@ -2,7 +2,4 @@
 .mainudb
 
 # Logs
-/log
-
-# Trash
-/.ropenproject
+log/
