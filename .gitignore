@@ -1,5 +1,5 @@
+.gitignore
 # Sensitive data
 .mainudb
-
 # Logs
 log/
