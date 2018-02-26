@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from flask import Flask, jsonify, redirect
+from flask import Flask, jsonify, redirect, request
 from sqlalchemy import create_engine
 from time import localtime, strftime
 import os
@@ -117,8 +117,8 @@ def get_otros():
             logging.debug("Complemento %d" % c['id'])
             im = cx.execute("SELECT FotoComplemento.ruta FROM " +
                             "FotoComplemento WHERE " +
-                            "FotoComplemento.id=%d AND " % c['id'] +
-                            "FotoComplemento.oficial=True AND " +
+                            "FotoComplemento.Complemento_id=%d " % c['id'] +
+                            "AND FotoComplemento.oficial=True AND " +
                             "FotoComplemento.visible=True").fetchone()
             if im is not None:
                 img = OTH_PATH + im['ruta']
@@ -132,6 +132,50 @@ def get_otros():
         logging.exception("No se ha podido realizar la petición")
         return None
 
+
+@app.route("/get_bocadillo", methods=["GET"])
+def get_bocadillo():
+    id = int(request.args.get('id'))
+    try:
+        cx = db.connect()
+        b = cx.execute("SELECT * FROM Bocadillo WHERE Bocadillo.id=%d"
+                        % id).fetchone()
+        ings_id = cx.execute("SELECT * FROM IngredienteBocadillo " +
+                             "WHERE Bocadillo_id=%d" % id)
+        ings = []
+        for i in ings_id:
+            ing = cx.execute("SELECT Ingrediente.nombre FROM " +
+                             "Ingrediente WHERE Ingrediente.id=%d"
+                             % i['Ingrediente_id']).fetchone()
+            ings.append(ing['nombre'])
+
+        im = cx.execute("SELECT FotoBocadillo.ruta FROM FotoBocadillo " +
+                         "WHERE FotoBocadillo.Bocadillo_id=%d " % id +
+                         "AND FotoBocadillo.visible=True AND " +
+                         "FotoBocadillo.oficial=True").fetchone()
+        if im is not None:
+            img = BOC_PATH + im['ruta']
+        else:
+            img = None
+
+        vals_id = cx.execute("SELECT * FROM ValoracionBocadillo " +
+                             "WHERE Bocadillo_id=%d" % id)
+        vals = []
+        for v in vals_id:
+            val = cx.execute("SELECT v.id, v.texto, v.puntuacion, " +
+                             "u.nombre, u.foto FROM ValoracionBocadillo " +
+                             "AS v INNER JOIN Usuario AS u ON " +
+                             "v.Usuario_id=u.id WHERE v.id=%d " % v['id'] +
+                             "AND v.visible=True").fetchone()
+            vals.append(dict(zip(val.keys(), val)))
+
+        boc = {'id': b['id'], 'nombre': b['nombre'], 'precio': b['precio'],
+               'puntuacion': b['puntuacion'], 'ingredientes': ings,
+               'imagen': img, 'valoraciones': vals}
+        return jsonify(boc)
+    except Exception as e:
+        logging.exception("No se ha podido realizar la petición")
+        return None
 
 @app.route("/", methods=["GET"])
 def api_main():
