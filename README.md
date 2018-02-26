@@ -32,25 +32,90 @@ pip3 install simplejson
 ```
 La instalación de SQLAlchemy puede dar problemas en entornos Windows. Si se da el caso, descargar de la [web oficial](https://www.sqlalchemy.org/download.html), descomprimir e instalar usando `py setup.py install`.
 
-Funciones ofrecidas por la API
+Documentación
 -------------
 
-La API REST que proporciona acceso a las diferentes funciones que aquí se muestran está accesible a través de **mainu.eus/api**. Junto a cada función se indican los métodos soportados (`GET`, `POST`).
+La API se encuentra disponible en [api.mainu.eus](https://api.mainu.eus). Puedes acceder a las diferentes funciones a través de dicha URL utilizando HTTPS.
 
-### `/get_bocadillos` `[GET]`
+### Funciones
 
-Devuelve un `array` en formato `JSON` de la lista de bocadillos, donde cada elemento tiene el siguiente formato:
+#### get_bocadillos
+**methods=[GET] query=[]**
+
+Devuelve la lista de bocadillos en formato `JSON`. No necesita ningún parámetro. Cada elemento tiene la estructura de la [versión resumida de un objeto `Bocadillo`](#bocadillo).
+
+#### get_menu
+**methods=[GET] query=[]**
+
+Devuelve el menú del día en formato `JSON`. No necesita ningún parámetro. Consiste en un diccionario de tres listas:
+```
+{
+  "postre": [...],
+  "primeros": [...],
+  "segundos": [...]
+}
+```
+Por lo general, el postre sólo contendrá un elemento, pero se devuelve igualmente una lista, como en los otros dos casos. Cada elemento dentro de estas listas tiene la estructura de la [versión resumida de un objeto `Plato`](#plato).
+
+#### get_otros
+**methods=[GET] query=[]**
+
+Devuelve la lista de otros productos (bebidas, raciones...) en formato `JSON`. No necesita ningún parámetro. Cada elemento dentro de estas listas tiene la estructura de la [versión resumida de un objeto `Otro`](#otro).
+
+#### get_bocadillo
+**methods=[GET] query=[id]**
+
+Devuelve la información asociada a un bocadillo en formato `JSON`. Se le ha de pasar como parámetro el `id` del bocadillo que se quiere solicitar (en caso de no pasarle este parámetro o de pasarle un `id` inexistente, se devolverá un error). La estructura que se devuelve es la correspondiente a un objeto [`Bocadillo`](#bocadillo).
+
+#### get_plato
+**methods=[GET] query=[id]**
+
+Devuelve la información asociada a un plato en formato `JSON`. Se le ha de pasar como parámetro el `id` del plato que se quiere solicitar (en caso de no pasarle este parámetro o de pasarle un `id` inexistente, se devolverá un error). La estructura que se devuelve es la correspondiente a un objeto [`Plato`](#plato).
+
+### Objetos
+
+#### Bocadillo
 ```
 {
   "id": 1,
+  "imagen": null,
   "ingredientes": [
-    "Pechuga",
-    "Lechuga",
-    "Tomate"
+    "bacon"
   ],
-  "nombre": "Ave César",
-  "precio": 2.50,
-  "puntuacion": 7.8
+  "nombre": "Bacon",
+  "precio": 2.05,
+  "puntuacion": null,
+  "valoraciones": [...]
+}
+```
+
+- `id` es el identificador del bocadillo (uso interno).
+
+- `imagen` es la URL en la que se encuentra la imagen predeterminada para dicho bocadillo. Si no existe una imagen considerada *oficial* para un bocadillo, el campo podrá ser `null`
+
+- `ingredientes` es la lista de ingredientes que tiene el bocadillo.
+
+- `nombre` es el nombre del bocadillo en castellano.
+
+- `precio` indica el precio del bocadillo.
+
+- `puntuacion` es la media de la puntuación obtenida en las valoraciones. Si no hay puntuaciones con las que hacer la media, su valor será `null`.
+
+- `valoraciones` es una lista de las valoraciones enviadas y aprobadas para dicho bocadillo. La estructura de cada elemento se corresponde con la del objeto [`Valoración`](#valoracion).
+
+##### Versión resumida
+```
+{
+  "id": 6,
+  "ingredientes": [
+    "bacon",
+    "queso",
+    "huevo",
+    "pollo"
+  ],
+  "nombre": "Jamaika",
+  "precio": 3.55,
+  "puntuacion": null
 }
 ```
 
@@ -62,55 +127,87 @@ Devuelve un `array` en formato `JSON` de la lista de bocadillos, donde cada elem
 
 - `precio` indica el precio del bocadillo.
 
-- `puntuacion` es la media de la puntuación obtenida en las valoraciones.
+- `puntuacion` es la media de la puntuación obtenida en las valoraciones. Si no hay puntuaciones con las que hacer la media, su valor será `null`.
 
-### `/get_menu` `[GET]`
-
-Devuelve un `array` en formato `JSON` del menú del día (por lo general: tres primeros, tres segundos y un postre), donde cada elemento tiene el siguiente formato:
+#### Plato
 ```
 {
-  "actual": 1,
   "descripcion": null,
-  "id": 2,
-  "izena": null,
-  "nombre": "Plato2",
-  "tipo": 1
+  "id": 1,
+  "imagen": "https://server.mainu.eus/external/images/platos/1_2018-01-01--00-00-00-000.jpg",
+  "nombre": "Huevos gratinados",
+  "puntuacion": null,
+  "tipo": 1,
+  "valoraciones": [...]
 }
 ```
-- `actual` indica si el plato se encuentra en el menú del día o no.
 
-- `descripcion` permite introducir una descripción del plato.
+- `descripcion` es una descripción breve del plato. Puede no existir y, por lo tanto, devolver el valor `null`.
 
-- `id` es el identificador del plato (uso interno).
+- `id` es el identificador del bocadillo (uso interno).
 
-- `izena` es el nombre del plato en euskera.
+- `imagen` es la URL en la que se encuentra la imagen predeterminada para dicho plato. Si no existe una imagen considerada *oficial* para un plato, el campo podrá ser `null`
 
 - `nombre` es el nombre del plato en castellano.
 
-- `tipo` indica si es un primero (1), segundo (2) o un postre (3).
+- `precio` indica el precio del bocadillo.
 
-### `/get_menu_summary` `[GET]`
+- `puntuacion` es la media de la puntuación obtenida en las valoraciones. Si no hay puntuaciones con las que hacer la media, su valor será `null`.
 
-Devuelve un *diccionario* en formato `JSON` con los nombres de los platos del menú del día:
+- `tipo` indica el tipo de plato que es: primero (1), segundo (2) o postre (3).
+
+- `valoraciones` es una lista de las valoraciones enviadas y aprobadas para dicho plato. La estructura de cada elemento se corresponde con la del objeto [`Valoración`](#valoracion).
+
+##### Versión resumida
 ```
 {
-  "postre": "Plato7",
-  "primeros": [
-    "Plato2",
-    "Plato4",
-    "Plato10"
-  ],
-  "segundos": [
-    "Plato5",
-    "Plato8",
-    "Plato11"
-  ]
+  "id": 6,
+  "imagen": "https://server.mainu.eus/external/images/platos/6_2018-01-01--00-00-00-000.jpg",
+  "nombre": "Ensalada de pasta",
+  "puntuacion": null
 }
 ```
-- `postre` incluye un único elemento, correspondiente al campo `nombre` del postre que se encuentre en el menú del día.
+- `id` es el identificador del plato (uso interno).
 
-- `primeros` incluye un `array` de los campos `nombre` de los primeros que se encuentren en el menú del día.
+- `imagen` es la URL en la que se encuentra la imagen predeterminada para dicho plato. Si no existe una imagen considerada *oficial* para un plato, el campo podrá ser `null`.
 
-- `segundos` incluye un `array` de los campos `nombre` de los segundos que se encuentren en el menú del día.
+- `nombre` es el nombre del plato en castellano.
 
-> *En desarrollo...*
+- `puntuacion` es la media de la puntuación obtenida en las valoraciones. Si no hay puntuaciones con las que hacer la media, su valor será `null`.
+
+#### Otro
+
+##### Versión resumida
+```
+{
+  "id": 1,
+  "imagen": null,
+  "nombre": "Fanta",
+  "precio": 1.00,
+  "puntuacion": null
+}
+```
+
+- `id` es el identificador del producto (uso interno).
+
+- `imagen` es la URL en la que se encuentra la imagen predeterminada para dicho producto. Si no existe una imagen considerada *oficial* para un producto, el campo podrá ser `null`.
+
+- `nombre` es el nombre del producto en castellano.
+
+- `precio` indica el precio del producto.
+
+- `puntuacion` es la media de la puntuación obtenida en las valoraciones. Si no hay puntuaciones con las que hacer la media, su valor será `null`.
+
+
+#### Valoración
+
+Las valoraciones son enviadas por la API en las funciones `get_bocadillo`, `get_plato` y `get_otro`. Estas funciones devuelven, entre otros datos, una lista con valoraciones. A pesar de ser valoraciones de diferentes objetos, todas tienen la misma estructura:
+```
+{
+  "foto": "https://i.imgur.com/Wc9VOaZ.png",
+  "id": 1,
+  "nombre": "Mainu Team",
+  "puntuacion": 3,
+  "texto": "Esta es una valoraci\u00f3n de prueba. El usuario puede escribir hasta 280 caracteres."
+}
+```
