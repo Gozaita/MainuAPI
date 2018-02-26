@@ -50,7 +50,7 @@ app = Flask(__name__)
 
 @app.route("/get_bocadillos", methods=["GET"])
 def get_bocadillos():
-    logging.info("Devolviendo lista de bocadillos")
+    logging.info("Devuelve lista completa de los bocadillos disponibles")
     try:
         cx = db.connect()
         bocs = cx.execute("SELECT * FROM Bocadillo")
@@ -68,14 +68,14 @@ def get_bocadillos():
                    'puntuacion': b['puntuacion'], 'ingredientes': ings}
             bocs_final.append(boc)
         return jsonify(bocs_final)
-    except Exception as e:
-        logging.exception("No se ha podido realizar la petición")
+    except Exception:
+        logging.exception("Ha ocurrido una excepción durante la petición")
         return None
 
 
 @app.route("/get_menu", methods=["GET"])
 def get_menu():
-    logging.info("Devolviendo menú del día")
+    logging.info("Devuelve menú del día actualizado")
     try:
         cx = db.connect()
         menu = cx.execute("SELECT * FROM Plato WHERE actual=True")
@@ -101,45 +101,46 @@ def get_menu():
             else:
                 ps.append(pl)
         return jsonify({'primeros': pr, 'segundos': sg, 'postre': ps})
-    except Exception as e:
-        logging.exception("No se ha podido realizar la petición")
+    except Exception:
+        logging.exception("Ha ocurrido una excepción durante la petición")
         return None
 
 
 @app.route("/get_otros", methods=["GET"])
 def get_otros():
-    logging.info("Devolviendo otros")
+    logging.info("Devuelve otros elementos")
     try:
         cx = db.connect()
-        cm = cx.execute("SELECT * FROM Complemento")
-        ots = []
-        for c in cm:
-            logging.debug("Complemento %d" % c['id'])
-            im = cx.execute("SELECT FotoComplemento.ruta FROM " +
-                            "FotoComplemento WHERE " +
-                            "FotoComplemento.Complemento_id=%d " % c['id'] +
-                            "AND FotoComplemento.oficial=True AND " +
-                            "FotoComplemento.visible=True").fetchone()
+        otros = cx.execute("SELECT * FROM Otro")
+        otros_final = []
+        for o in otros:
+            logging.debug("Otro %d" % o['id'])
+            im = cx.execute("SELECT FotoOtro.ruta FROM " +
+                            "FotoOtro WHERE " +
+                            "FotoOtro.Otro_id=%d " % o['id'] +
+                            "AND FotoOtro.oficial=True AND " +
+                            "FotoOtro.visible=True").fetchone()
             if im is not None:
                 img = OTH_PATH + im['ruta']
             else:
                 img = None
-            ot = {'id': c['id'], 'nombre': c['nombre'], 'precio': c['precio'],
-                  'puntuacion': c['puntuacion'], 'imagen': img}
-            ots.append(ot)
-        return jsonify(ots)
-    except Exception as e:
-        logging.exception("No se ha podido realizar la petición")
+            otro = {'id': o['id'], 'nombre': o['nombre'], 'precio':
+                    o['precio'], 'puntuacion': o['puntuacion'], 'imagen': img}
+            otros_final.append(otro)
+        return jsonify(otros_final)
+    except Exception:
+        logging.exception("Ha ocurrido una excepción durante la petición")
         return None
 
 
 @app.route("/get_bocadillo", methods=["GET"])
 def get_bocadillo():
+    logging.info("Devuelve bocadillo: id %s" % request.args.get('id'))
     id = int(request.args.get('id'))
     try:
         cx = db.connect()
         b = cx.execute("SELECT * FROM Bocadillo WHERE Bocadillo.id=%d"
-                        % id).fetchone()
+                       % id).fetchone()
         ings_id = cx.execute("SELECT * FROM IngredienteBocadillo " +
                              "WHERE Bocadillo_id=%d" % id)
         ings = []
@@ -150,9 +151,9 @@ def get_bocadillo():
             ings.append(ing['nombre'])
 
         im = cx.execute("SELECT FotoBocadillo.ruta FROM FotoBocadillo " +
-                         "WHERE FotoBocadillo.Bocadillo_id=%d " % id +
-                         "AND FotoBocadillo.visible=True AND " +
-                         "FotoBocadillo.oficial=True").fetchone()
+                        "WHERE FotoBocadillo.Bocadillo_id=%d " % id +
+                        "AND FotoBocadillo.visible=True AND " +
+                        "FotoBocadillo.oficial=True").fetchone()
         if im is not None:
             img = BOC_PATH + im['ruta']
         else:
@@ -173,13 +174,52 @@ def get_bocadillo():
                'puntuacion': b['puntuacion'], 'ingredientes': ings,
                'imagen': img, 'valoraciones': vals}
         return jsonify(boc)
-    except Exception as e:
-        logging.exception("No se ha podido realizar la petición")
+    except Exception:
+        logging.exception("Ha ocurrido una excepción durante la petición")
         return None
+
+
+@app.route("/get_plato", methods=["GET"])
+def get_plato():
+    logging.info("Devuelve plato: id %s" % request.args.get('id'))
+    id = int(request.args.get('id'))
+    try:
+        cx = db.connect()
+        p = cx.execute("SELECT * FROM Plato WHERE Plato.id=%d"
+                       % id).fetchone()
+
+        im = cx.execute("SELECT FotoPlato.ruta FROM FotoPlato " +
+                        "WHERE FotoPlato.Plato_id=%d " % id +
+                        "AND FotoPlato.visible=True AND " +
+                        "FotoPlato.oficial=True").fetchone()
+        if im is not None:
+            img = PLT_PATH + im['ruta']
+        else:
+            img = None
+
+        vals_id = cx.execute("SELECT * FROM ValoracionPlato " +
+                             "WHERE Plato_id=%d" % id)
+        vals = []
+        for v in vals_id:
+            val = cx.execute("SELECT v.id, v.texto, v.puntuacion, " +
+                             "u.nombre, u.foto FROM ValoracionPlato " +
+                             "AS v INNER JOIN Usuario AS u ON " +
+                             "v.Usuario_id=u.id WHERE v.id=%d " % v['id'] +
+                             "AND v.visible=True").fetchone()
+            vals.append(dict(zip(val.keys(), val)))
+
+        plt = {'id': p['id'], 'nombre': p['nombre'], 'puntuacion':
+               p['puntuacion'], 'descripcion': p['descripcion'],
+               'tipo': p['tipo'], 'imagen': img, 'valoraciones': vals}
+        return jsonify(plt)
+    except Exception:
+        logging.exception("Ha ocurrido una excepción durante la petición")
+        return None
+
 
 @app.route("/", methods=["GET"])
 def api_main():
-    logging.info("Redirigiendo a la página principal de la API")
+    logging.info("Redirige a %s" % API_MAIN)
     return redirect(API_MAIN)
 
 
