@@ -81,6 +81,7 @@ def get_menu():
         menu = cx.execute("SELECT * FROM Plato WHERE actual=True")
         pr = []
         sg = []
+        ps = []
         for p in menu:
             logging.debug("Plato %d" % p['id'])
             im = cx.execute("SELECT FotoPlato.ruta FROM FotoPlato WHERE " +
@@ -98,8 +99,35 @@ def get_menu():
             elif p['tipo'] == 2:
                 sg.append(pl)
             else:
-                ps = pl
+                ps.append(pl)
         return jsonify({'primeros': pr, 'segundos': sg, 'postre': ps})
+    except Exception as e:
+        logging.exception("No se ha podido realizar la petición")
+        return None
+
+
+@app.route("/get_otros", methods=["GET"])
+def get_otros():
+    logging.info("Devolviendo otros")
+    try:
+        cx = db.connect()
+        cm = cx.execute("SELECT * FROM Complemento")
+        ots = []
+        for c in cm:
+            logging.debug("Complemento %d" % c['id'])
+            im = cx.execute("SELECT FotoComplemento.ruta FROM " +
+                            "FotoComplemento WHERE " +
+                            "FotoComplemento.id=%d AND " % c['id'] +
+                            "FotoComplemento.oficial=True AND " +
+                            "FotoComplemento.visible=True").fetchone()
+            if im is not None:
+                img = OTH_PATH + im['ruta']
+            else:
+                img = None
+            ot = {'id': c['id'], 'nombre': c['nombre'], 'precio': c['precio'],
+                  'puntuacion': c['puntuacion'], 'imagen': img}
+            ots.append(ot)
+        return jsonify(ots)
     except Exception as e:
         logging.exception("No se ha podido realizar la petición")
         return None
