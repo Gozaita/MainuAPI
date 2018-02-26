@@ -2,8 +2,8 @@
 from flask import Flask, jsonify, redirect, request
 from sqlalchemy import create_engine
 from time import localtime, strftime
+from logging.handlers import TimedRotatingFileHandler
 import os
-import sys
 import logging
 
 URI = open('.mainudb', 'r').read()
@@ -17,31 +17,39 @@ OTH_PATH = IMG_PATH + 'otros/'
 
 API_MAIN = "https://www.mainu.eus/api"
 
-try:
-    log = open(LOG_PATH, 'a')
-except FileNotFoundError:
-    if not os.path.exists(os.path.dirname(LOG_PATH)):
-        os.makedirs(os.path.dirname(LOG_PATH))
-    log = open(LOG_PATH, 'w')
-
-log.write("##############################################\n")
-log.write("MainU -- mainu.eus -- %s\n"
-          % strftime("%Y-%m-%d %H:%M:%S", localtime()))
-log.write("API REST\n")
-log.write("##############################################\n")
-log.close()
-
-sys.stdout = open(LOG_PATH, 'a')
-sys.stderr = sys.stdout
-
-logging.basicConfig(filename=LOG_PATH,
-                    format='[%(asctime)s]: %(levelname)s - ' +
-                    '%(funcName)s - %(message)s',
-                    filemode='a',
-                    level=logging.DEBUG)
-
 db = create_engine(URI)
 app = Flask(__name__)
+
+#############################################
+# MainU Logger
+#############################################
+
+
+def log_setup():
+    try:
+        log = open(LOG_PATH, 'a')
+    except FileNotFoundError:
+        if not os.path.exists(os.path.dirname(LOG_PATH)):
+            os.makedirs(os.path.dirname(LOG_PATH))
+        log = open(LOG_PATH, 'w')
+
+    log.write("##############################################\n")
+    log.write("MainU -- mainu.eus -- %s\n"
+              % strftime("%Y-%m-%d %H:%M:%S", localtime()))
+    log.write("API REST\n")
+    log.write("##############################################\n")
+    log.close()
+
+    handler = TimedRotatingFileHandler(LOG_PATH,
+                                       when="d",
+                                       interval=1,
+                                       backupCount=7)
+    handler.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('[%(asctime)s]: %(levelname)s - ' +
+                                  '%(funcName)s - %(message)s')
+    handler.setFormatter(formatter)
+    return handler
+
 
 #############################################
 # MainU API
@@ -50,7 +58,7 @@ app = Flask(__name__)
 
 @app.route("/get_bocadillos", methods=["GET"])
 def get_bocadillos():
-    logging.info("Devuelve lista completa de los bocadillos disponibles")
+    app.logger.info("Devuelve lista completa de los bocadillos disponibles")
     try:
         cx = db.connect()
         bocs = cx.execute("SELECT * FROM Bocadillo")
@@ -69,13 +77,13 @@ def get_bocadillos():
             bocs_final.append(boc)
         return jsonify(bocs_final)
     except Exception:
-        logging.exception("Ha ocurrido una excepción durante la petición")
+        app.logger.exception("Ha ocurrido una excepción durante la petición")
         return None
 
 
 @app.route("/get_menu", methods=["GET"])
 def get_menu():
-    logging.info("Devuelve menú del día actualizado")
+    app.logger.info("Devuelve menú del día actualizado")
     try:
         cx = db.connect()
         menu = cx.execute("SELECT * FROM Plato WHERE actual=True")
@@ -83,7 +91,7 @@ def get_menu():
         sg = []
         ps = []
         for p in menu:
-            logging.debug("Plato %d" % p['id'])
+            app.logger.debug("Plato %d" % p['id'])
             im = cx.execute("SELECT FotoPlato.ruta FROM FotoPlato WHERE " +
                             "FotoPlato.Plato_id=%d AND " % p['id'] +
                             "FotoPlato.oficial=True AND " +
@@ -102,19 +110,19 @@ def get_menu():
                 ps.append(pl)
         return jsonify({'primeros': pr, 'segundos': sg, 'postre': ps})
     except Exception:
-        logging.exception("Ha ocurrido una excepción durante la petición")
+        app.logger.exception("Ha ocurrido una excepción durante la petición")
         return None
 
 
 @app.route("/get_otros", methods=["GET"])
 def get_otros():
-    logging.info("Devuelve otros elementos")
+    app.logger.info("Devuelve otros elementos")
     try:
         cx = db.connect()
         otros = cx.execute("SELECT * FROM Otro")
         otros_final = []
         for o in otros:
-            logging.debug("Otro %d" % o['id'])
+            app.logger.debug("Otro %d" % o['id'])
             im = cx.execute("SELECT FotoOtro.ruta FROM " +
                             "FotoOtro WHERE " +
                             "FotoOtro.Otro_id=%d " % o['id'] +
@@ -129,14 +137,17 @@ def get_otros():
             otros_final.append(otro)
         return jsonify(otros_final)
     except Exception:
-        logging.exception("Ha ocurrido una excepción durante la petición")
+        app.logger.exception("Ha ocurrido una excepción durante la petición")
         return None
 
 
 @app.route("/get_bocadillo", methods=["GET"])
 def get_bocadillo():
-    logging.info("Devuelve bocadillo: id %s" % request.args.get('id'))
-    id = int(request.args.get('id'))
+    try:
+        app.logger.info("Devuelve bocadillo: id %s" % request.args.get('id'))
+        id = int(request.args.get('id'))
+    except Exception:
+        app.logger.exception("Excepción inicial")
     try:
         cx = db.connect()
         b = cx.execute("SELECT * FROM Bocadillo WHERE Bocadillo.id=%d"
@@ -175,13 +186,13 @@ def get_bocadillo():
                'imagen': img, 'valoraciones': vals}
         return jsonify(boc)
     except Exception:
-        logging.exception("Ha ocurrido una excepción durante la petición")
+        app.logger.exception("Ha ocurrido una excepción durante la petición")
         return None
 
 
 @app.route("/get_plato", methods=["GET"])
 def get_plato():
-    logging.info("Devuelve plato: id %s" % request.args.get('id'))
+    app.logger.info("Devuelve plato: id %s" % request.args.get('id'))
     id = int(request.args.get('id'))
     try:
         cx = db.connect()
@@ -213,15 +224,18 @@ def get_plato():
                'tipo': p['tipo'], 'imagen': img, 'valoraciones': vals}
         return jsonify(plt)
     except Exception:
-        logging.exception("Ha ocurrido una excepción durante la petición")
+        app.logger.exception("Ha ocurrido una excepción durante la petición")
         return None
 
 
 @app.route("/", methods=["GET"])
 def api_main():
-    logging.info("Redirige a %s" % API_MAIN)
+    app.logger.info("Redirige a %s" % API_MAIN)
     return redirect(API_MAIN)
 
 
 if __name__ == '__main__':
+    handler = log_setup()
+    app.logger.addHandler(handler)
+    app.logger.setLevel(logging.DEBUG)
     app.run()
