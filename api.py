@@ -233,6 +233,45 @@ def get_plato():
         return None
 
 
+@app.route("/get_otro", methods=["GET"])
+def get_otro():
+    app.logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                    "Devuelve otro: id %s" % request.args.get('id'))
+    id = int(request.args.get('id'))
+    try:
+        cx = db.connect()
+        o = cx.execute("SELECT * FROM Otro WHERE Otro.id=%d"
+                       % id).fetchone()
+
+        im = cx.execute("SELECT FotoOtro.ruta FROM FotoOtro " +
+                        "WHERE FotoOtro.Otro_id=%d " % id +
+                        "AND FotoOtro.visible=True AND " +
+                        "FotoOtro.oficial=True").fetchone()
+        if im is not None:
+            img = OTH_PATH + im['ruta']
+        else:
+            img = None
+
+        vals_id = cx.execute("SELECT * FROM ValoracionOtro " +
+                             "WHERE Otro_id=%d" % id)
+        vals = []
+        for v in vals_id:
+            val = cx.execute("SELECT v.id, v.texto, v.puntuacion, " +
+                             "u.nombre, u.foto FROM ValoracionOtro " +
+                             "AS v INNER JOIN Usuario AS u ON " +
+                             "v.Usuario_id=u.id WHERE v.id=%d " % v['id'] +
+                             "AND v.visible=True").fetchone()
+            vals.append(dict(zip(val.keys(), val)))
+
+        otr = {'id': o['id'], 'nombre': o['nombre'], 'puntuacion':
+               o['puntuacion'], 'imagen': img, 'valoraciones': vals}
+        return jsonify(otr)
+    except Exception:
+        app.logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                             "Ha ocurrido una excepción durante la petición")
+        return None
+
+
 @app.route("/", methods=["GET"])
 def api_main():
     app.logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
