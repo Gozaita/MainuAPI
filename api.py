@@ -58,6 +58,27 @@ app.logger.setLevel(logging.DEBUG)
 
 @app.route("/get_bocadillos", methods=["GET"])
 def get_bocadillos():
+    """
+    Devuelve una lista de bocadillos. Para cada uno:
+    - id
+    - nombre
+    - precio
+    - puntuacion
+    - ingredientes
+    Tareas que realiza:
+    1. Recoge todas las filas y columnas de la tabla Bocadillo.
+    2. Para cada elemento de los recogidos:
+       2.1. Recoge todas las filas y columnas de la tabla IngredienteBocadillo
+            donde el Bocadillo_id se corresponde con el id del elemento
+            en cuestión.
+       2.2. Para cada elemento de los recogidos en el 2.1, acude a la tabla
+            Ingrediente para recuperar el nombre utilizando el Ingrediente_id.
+       2.3. Todos los nombres de los ingredientes son añadidos a un array.
+       2.4. Se insertan en un diccionario todos los elementos que se van a
+            devolver para cada bocadillo, incluyendo la lista de ingredientes.
+    3. Cada elemento, tras realizar las tareas del punto 2, se añaden a un
+       array, que se devuelve en formato JSON.
+    """
     app.logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                     "Devuelve lista completa de los bocadillos")
     try:
@@ -85,6 +106,33 @@ def get_bocadillos():
 
 @app.route("/get_menu", methods=["GET"])
 def get_menu():
+    """
+    Devuelve el menú del día usando un diccionario de tres arrays:
+    - primeros
+    - segundos
+    - postre
+    Cada elemento de cualquiera de los arrays contiene:
+    - id
+    - nombre
+    - puntuacion
+    - imagen
+    Tareas que realiza:
+    1. Recoge todos los elementos de la tabla Plato que tengan el valor True
+       en la columna 'actual'. Esto hace que únicamente recoja los elementos
+       que se encuentran en el menú del día.
+    2. Para cada elemento de los recogidos:
+       2.1. Recoge de la tabla FotoPlato el campo ruta de la primera fila
+            cuyo Plato_id coincida con el del elemento de la iteración, y tenga
+            el valor True en los campos 'oficial' y 'visible'. Si se ha
+            devuelto una imagen (im is not None), se establece la ruta
+            completa para la imagen del plato añadiéndole el prefijo definido
+            al inicio (PLT_PATH).
+       2.2. Se insertan en un diccionario todos los elementos que se van a
+            devolver para cada plato, incluyendo la ruta de la imagen.
+       2.3. Se comprueba si el tipo del plato es 1 (primero), 2 (segundo)
+            o 3 (postre). En función de ello, se añade a un array u otro.
+    3. Se deuvelve en formato JSON el diccionario con los tres arrays.
+    """
     app.logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                     "Devuelve menú del día")
     try:
