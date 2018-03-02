@@ -48,7 +48,8 @@ def log_setup(path):
     handler = TimedRotatingFileHandler(path,
                                        when="D",
                                        interval=1,
-                                       backupCount=7)
+                                       backupCount=7,
+                                       encoding="utf-8")
     handler.setLevel(logging.DEBUG)
     formatter = logging.Formatter('[%(asctime)s]: %(levelname)s - ' +
                                   '%(funcName)s - %(message)s')
@@ -157,7 +158,8 @@ def get_bocadillos():
             en cuestión.
        2.2. Para cada elemento de los recogidos en el 2.1, acude a la tabla
             Ingrediente para recuperar el nombre utilizando el Ingrediente_id.
-       2.3. Todos los nombres de los ingredientes son añadidos a un array.
+       2.3. Todos los nombres de los ingredientes son añadidos a un array,
+            junto a su id.
        2.4. Se insertan en un diccionario todos los elementos que se van a
             devolver para cada bocadillo, incluyendo la lista de ingredientes.
     3. Cada elemento, tras realizar las tareas del punto 2, se añaden a un
@@ -172,12 +174,12 @@ def get_bocadillos():
         for b in bocs:
             ings_id = cx.execute("SELECT * FROM IngredienteBocadillo " +
                                  "WHERE Bocadillo_id=%d" % b['id'])
-            ings = []
+            ings = {}
             for i in ings_id:
                 ing = cx.execute("SELECT Ingrediente.nombre FROM " +
                                  "Ingrediente WHERE Ingrediente.id=%d"
                                  % i['Ingrediente_id']).fetchone()
-                ings.append(ing['nombre'])
+                ings[i['Ingrediente_id']] = ing['nombre']
             boc = {'id': b['id'], 'nombre': b['nombre'], 'precio': b['precio'],
                    'puntuacion': b['puntuacion'], 'ingredientes': ings}
             bocs_final.append(boc)
@@ -205,14 +207,23 @@ def get_bocadillo_by_id(id):
                              % i['Ingrediente_id']).fetchone()
             ings.append(ing['nombre'])
 
-        im = cx.execute("SELECT FotoBocadillo.ruta FROM FotoBocadillo " +
+        imgs = {}
+        im = cx.execute("SELECT * FROM FotoBocadillo " +
                         "WHERE FotoBocadillo.Bocadillo_id=%d " % id +
                         "AND FotoBocadillo.visible=True AND " +
                         "FotoBocadillo.oficial=True").fetchone()
         if im is not None:
-            img = BOC_PATH + im['ruta']
+            imgs[im['id']] = BOC_PATH + im['ruta']
+
+            ims = cx.execute("SELECT * FROM FotoBocadillo " +
+                             "WHERE FotoBocadillo.Bocadillo_id=%d " % id +
+                             "AND FotoBocadillo.visible=True AND " +
+                             "FotoBocadillo.id!=%d" % im['id'])
+            if ims is not None:
+                for i in ims:
+                    imgs[i['id']] = BOC_PATH + im['ruta']
         else:
-            img = None
+            imgs = None
 
         vals_id = cx.execute("SELECT * FROM ValoracionBocadillo " +
                              "WHERE Bocadillo_id=%d" % id)
@@ -227,7 +238,7 @@ def get_bocadillo_by_id(id):
 
         boc = {'id': b['id'], 'nombre': b['nombre'], 'precio': b['precio'],
                'puntuacion': b['puntuacion'], 'ingredientes': ings,
-               'imagen': img, 'valoraciones': vals}
+               'images': imgs, 'valoraciones': vals}
         return jsonify(boc)
     except Exception:
         app.logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
@@ -309,14 +320,23 @@ def get_plato_by_id(id):
         p = cx.execute("SELECT * FROM Plato WHERE Plato.id=%d"
                        % id).fetchone()
 
-        im = cx.execute("SELECT FotoPlato.ruta FROM FotoPlato " +
+        imgs = {}
+        im = cx.execute("SELECT * FROM FotoPlato " +
                         "WHERE FotoPlato.Plato_id=%d " % id +
                         "AND FotoPlato.visible=True AND " +
                         "FotoPlato.oficial=True").fetchone()
         if im is not None:
-            img = PLT_PATH + im['ruta']
+            imgs[im['id']] = PLT_PATH + im['ruta']
+
+            ims = cx.execute("SELECT * FROM FotoPlato " +
+                             "WHERE FotoPlato.Plato_id=%d " % id +
+                             "AND FotoPlato.visible=True AND " +
+                             "FotoPlato.id!=%d" % im['id'])
+            if ims is not None:
+                for i in ims:
+                    imgs[i['id']] = PLT_PATH + im['ruta']
         else:
-            img = None
+            imgs = None
 
         vals_id = cx.execute("SELECT * FROM ValoracionPlato " +
                              "WHERE Plato_id=%d" % id)
@@ -331,7 +351,7 @@ def get_plato_by_id(id):
 
         plt = {'id': p['id'], 'nombre': p['nombre'], 'puntuacion':
                p['puntuacion'], 'descripcion': p['descripcion'],
-               'tipo': p['tipo'], 'imagen': img, 'valoraciones': vals}
+               'tipo': p['tipo'], 'images': imgs, 'valoraciones': vals}
         return jsonify(plt)
     except Exception:
         app.logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
@@ -345,6 +365,27 @@ def get_plato_by_id(id):
 
 @app.route("/otros", methods=["GET"])
 def get_otros():
+    """
+    Devuelve una lista de otros productos. Para cada uno:
+    - id
+    - nombre
+    - precio
+    - puntuacion
+    - imagen
+    Tareas que realiza:
+    1. Recoge todas las filas y columnas de la tabla Otro.
+    2. Para cada elemento de los recogidos:
+       2.1. Recoge de la tabla FotoOtro el campo ruta de la primera fila
+            cuyo Otro_id coincida con el del elemento de la iteración, y tenga
+            el valor True en los campos 'oficial' y 'visible'. Si se ha
+            devuelto una imagen (im is not None), se establece la ruta
+            completa para la imagen del plato añadiéndole el prefijo definido
+            al inicio (OTH_PATH).
+       2.2. Se insertan en un diccionario todos los elementos que se van a
+            devolver para cada producto, incluyendo la ruta de la imagen.
+    3. Cada elemento, tras realizar las tareas del punto 2, se añade a un
+       array, que se devuelve en formato JSON.
+    """
     app.logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                     "Devuelve otros elementos")
     try:
@@ -380,14 +421,23 @@ def get_otro_by_id(id):
         o = cx.execute("SELECT * FROM Otro WHERE Otro.id=%d"
                        % id).fetchone()
 
-        im = cx.execute("SELECT FotoOtro.ruta FROM FotoOtro " +
+        imgs = {}
+        im = cx.execute("SELECT * FROM FotoOtro " +
                         "WHERE FotoOtro.Otro_id=%d " % id +
                         "AND FotoOtro.visible=True AND " +
                         "FotoOtro.oficial=True").fetchone()
         if im is not None:
-            img = OTH_PATH + im['ruta']
+            imgs[im['id']] = OTH_PATH + im['ruta']
+
+            ims = cx.execute("SELECT * FROM FotoOtro " +
+                             "WHERE FotoOtro.Otro_id=%d " % id +
+                             "AND FotoOtro.visible=True AND " +
+                             "FotoOtro.id!=%d" % im['id'])
+            if ims is not None:
+                for i in ims:
+                    imgs[i['id']] = OTH_PATH + im['ruta']
         else:
-            img = None
+            imgs = None
 
         vals_id = cx.execute("SELECT * FROM ValoracionOtro " +
                              "WHERE Otro_id=%d" % id)
@@ -401,7 +451,7 @@ def get_otro_by_id(id):
             vals.append(dict(zip(val.keys(), val)))
 
         otr = {'id': o['id'], 'nombre': o['nombre'], 'puntuacion':
-               o['puntuacion'], 'imagen': img, 'valoraciones': vals}
+               o['puntuacion'], 'images': imgs, 'valoraciones': vals}
         return jsonify(otr)
     except Exception:
         app.logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
