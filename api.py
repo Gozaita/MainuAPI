@@ -3,12 +3,15 @@ from flask import Flask, jsonify, redirect, request
 from sqlalchemy import create_engine
 from time import localtime, strftime
 from logging.handlers import TimedRotatingFileHandler
+from google.oauth2 import id_token
+from google.auth.transport import requests
 import os
 import logging
 import sys
 import json
 
 URI = open('.mainudb', 'r').read()
+CLIENT_ID = open('.client_id', 'r').read()
 LOG_PATH = 'log/mainu.log'
 
 UPD_PATH = 'updates/'
@@ -456,6 +459,58 @@ def get_otro_by_id(id):
     except Exception:
         app.logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                              "Ha ocurrido una excepción durante la petición")
+        return None
+
+#############################################
+# Imágenes
+#############################################
+
+
+# TODO: add_image(idToken, type, id, image)
+
+#############################################
+# Valoraciones
+#############################################
+
+
+# TODO: add_valoration(idToken, type, id, valoration)
+
+#############################################
+# Usuarios
+#############################################
+
+
+# TODO: add_user(id, nombre, mail, foto)
+
+
+def verify_token(idToken):
+    """
+    Verifica la integridad del idToken entrante:
+    1. La función verify_oauth2_token comprueba:
+       - Que está firmado por Google.
+       - Que el valor del campo <aud> se correponde con el CLIENT_ID de MainU.
+       - Que el token no ha caducado.
+    2. Se comprueba, además:
+       - Que el valor del campo <iss> es accounts.google.com (o con HTTPS).
+    En caso de fallar, se levanta un ValueError y devuelve un userid 'None'.
+    """
+    try:
+        app.logger.info("Verifica la integridad del token recibido")
+        idinfo = id_token.verify_oauth2_token(idToken, requests.Request(),
+                                              CLIENT_ID)
+        if idinfo['iss'] not in ['accounts.google.com',
+                                 'https://accounts.google.com']:
+            raise ValueError('Wrong issuer.')
+
+        userid = idinfo['sub']
+        name = idinfo['name']
+        mail = idinfo['email']
+        pic = idinfo['picture']
+
+        app.logger.info("Token validado")
+        return userid, name, mail, pic
+    except ValueError:
+        app.logger.warning("La validación del token ha resultado negativa")
         return None
 
 #############################################
