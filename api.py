@@ -17,11 +17,6 @@ UPD_BOCD = UPD_PATH + 'bocadillos.json'
 UPD_PLAT = UPD_PATH + 'platos.json'
 UPD_OTHS = UPD_PATH + 'otros.json'
 
-UPD_PATH_DICT = {'main': '',
-                 'bocd': '',
-                 'plat': '',
-                 'oths': ''}
-
 SRV_PATH = 'https://server.mainu.eus/'
 IMG_PATH = SRV_PATH + 'external/images/'
 BOC_PATH = IMG_PATH + 'bocadillos/'
@@ -51,7 +46,7 @@ def log_setup(path):
     log.close()
 
     handler = TimedRotatingFileHandler(path,
-                                       when="d",
+                                       when="D",
                                        interval=1,
                                        backupCount=7)
     handler.setLevel(logging.DEBUG)
@@ -419,9 +414,9 @@ def get_otro_by_id(id):
 
 
 @app.route("/last_update/<type>", methods=["GET"])
-@app.route("/last_update/<type>/<int:id>", methods=["GET"])
+@app.route("/last_update/<type>/<id>", methods=["GET"])
 def last_update(type, id=None):
-    '''
+    """
     Devuelve la última fecha en la que se ha actualizado la lista de <type>,
     donde <type> puede ser:
     - bocadillos
@@ -429,7 +424,7 @@ def last_update(type, id=None):
     - otros
     Si se pasa además el parámetro <id> se devolverá información del
     bocadillo, plato del menú u otro (p. ej.: /last_update/menu/5).
-    '''
+    """
     app.logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                     "Devuelve última fecha de modificación")
     if id is None:
@@ -444,19 +439,19 @@ def last_update(type, id=None):
     else:
         if type == 'bocadillos':
             app.logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
-                            "type: %s, id: %d" % (type, id))
+                            "type: %s, id: %s" % (type, id))
             res = upd_bocd[id]
         elif type == 'menu':
             app.logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
-                            "type: %s, id: %d" % (type, id))
+                            "type: %s, id: %s" % (type, id))
             res = upd_plat[id]
         elif type == 'otros':
             app.logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
-                            "type: %s, id: %d" % (type, id))
+                            "type: %s, id: %s" % (type, id))
             res = upd_oths[id]
         else:
             app.logger.warning("IP: %s\n" % request.environ['REMOTE_ADDR'] +
-                               "type: %s, id: %d\n" % (type, id) +
+                               "type: %s, id: %s\n" % (type, id) +
                                "El tipo es inválido")
     return jsonify(res)
 
