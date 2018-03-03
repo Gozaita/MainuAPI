@@ -213,13 +213,14 @@ def get_bocadillo_by_id(id):
             ings.append({'id': i['Ingrediente_id'],
                         'nombre': ing['nombre']})
 
-        imgs = {}
+        imgs = []
         im = cx.execute("SELECT * FROM FotoBocadillo " +
                         "WHERE FotoBocadillo.Bocadillo_id=%d " % id +
                         "AND FotoBocadillo.visible=True AND " +
                         "FotoBocadillo.oficial=True").fetchone()
         if im is not None:
-            imgs[im['id']] = BOC_PATH + im['ruta']
+            img = BOC_PATH + im['ruta']
+            imgs.append({'id': im['id'], 'url': img})
 
             ims = cx.execute("SELECT * FROM FotoBocadillo " +
                              "WHERE FotoBocadillo.Bocadillo_id=%d " % id +
@@ -227,9 +228,8 @@ def get_bocadillo_by_id(id):
                              "FotoBocadillo.id!=%d" % im['id'])
             if ims is not None:
                 for i in ims:
-                    imgs[i['id']] = BOC_PATH + im['ruta']
-        else:
-            imgs = None
+                    img = BOC_PATH + i['ruta']
+                    imgs.append({'id': i['id'], 'url': img})
 
         vals_id = cx.execute("SELECT * FROM ValoracionBocadillo " +
                              "WHERE Bocadillo_id=%d" % id)
@@ -294,16 +294,17 @@ def get_menu():
         sg = []
         ps = []
         for p in menu:
-            im = cx.execute("SELECT FotoPlato.ruta FROM FotoPlato WHERE " +
+            imgs = []
+            im = cx.execute("SELECT * FROM FotoPlato WHERE " +
                             "FotoPlato.Plato_id=%d AND " % p['id'] +
                             "FotoPlato.oficial=True AND " +
                             "FotoPlato.visible=True").fetchone()
             if im is not None:
                 img = PLT_PATH + im['ruta']
-            else:
-                img = None
+                imgs.append({'id': im['id'], 'url': img})
+
             pl = {'id': p['id'], 'nombre': p['nombre'],
-                  'puntuacion': p['puntuacion'], 'imagen': img}
+                  'puntuacion': p['puntuacion'], 'images': imgs}
             if p['tipo'] == 1:
                 pr.append(pl)
             elif p['tipo'] == 2:
@@ -326,13 +327,14 @@ def get_plato_by_id(id):
         p = cx.execute("SELECT * FROM Plato WHERE Plato.id=%d"
                        % id).fetchone()
 
-        imgs = {}
+        imgs = []
         im = cx.execute("SELECT * FROM FotoPlato " +
                         "WHERE FotoPlato.Plato_id=%d " % id +
                         "AND FotoPlato.visible=True AND " +
                         "FotoPlato.oficial=True").fetchone()
         if im is not None:
-            imgs[im['id']] = PLT_PATH + im['ruta']
+            img = PLT_PATH + im['ruta']
+            imgs.append({'id': im['id'], 'url': img})
 
             ims = cx.execute("SELECT * FROM FotoPlato " +
                              "WHERE FotoPlato.Plato_id=%d " % id +
@@ -340,9 +342,8 @@ def get_plato_by_id(id):
                              "FotoPlato.id!=%d" % im['id'])
             if ims is not None:
                 for i in ims:
-                    imgs[i['id']] = PLT_PATH + im['ruta']
-        else:
-            imgs = None
+                    img = PLT_PATH + i['ruta']
+                    imgs.append({'id': i['id'], 'url': img})
 
         vals_id = cx.execute("SELECT * FROM ValoracionPlato " +
                              "WHERE Plato_id=%d" % id)
@@ -399,6 +400,7 @@ def get_otros():
         otros = cx.execute("SELECT * FROM Otro")
         otros_final = []
         for o in otros:
+            imgs = []
             im = cx.execute("SELECT FotoOtro.ruta FROM " +
                             "FotoOtro WHERE " +
                             "FotoOtro.Otro_id=%d " % o['id'] +
@@ -406,10 +408,10 @@ def get_otros():
                             "FotoOtro.visible=True").fetchone()
             if im is not None:
                 img = OTH_PATH + im['ruta']
-            else:
-                img = None
+                imgs.append({'id': im['id'], 'url': img})
+
             otro = {'id': o['id'], 'nombre': o['nombre'], 'precio':
-                    o['precio'], 'puntuacion': o['puntuacion'], 'imagen': img}
+                    o['precio'], 'puntuacion': o['puntuacion'], 'images': imgs}
             otros_final.append(otro)
         return jsonify(otros_final)
     except Exception:
@@ -427,13 +429,14 @@ def get_otro_by_id(id):
         o = cx.execute("SELECT * FROM Otro WHERE Otro.id=%d"
                        % id).fetchone()
 
-        imgs = {}
+        imgs = []
         im = cx.execute("SELECT * FROM FotoOtro " +
                         "WHERE FotoOtro.Otro_id=%d " % id +
                         "AND FotoOtro.visible=True AND " +
                         "FotoOtro.oficial=True").fetchone()
         if im is not None:
-            imgs[im['id']] = OTH_PATH + im['ruta']
+            img = OTH_PATH + im['ruta']
+            imgs.append({'id': im['id'], 'url': img})
 
             ims = cx.execute("SELECT * FROM FotoOtro " +
                              "WHERE FotoOtro.Otro_id=%d " % id +
@@ -441,9 +444,8 @@ def get_otro_by_id(id):
                              "FotoOtro.id!=%d" % im['id'])
             if ims is not None:
                 for i in ims:
-                    imgs[i['id']] = OTH_PATH + im['ruta']
-        else:
-            imgs = None
+                    img = OTH_PATH + i['ruta']
+                    imgs.append({'id': i['id'], 'url': img})
 
         vals_id = cx.execute("SELECT * FROM ValoracionOtro " +
                              "WHERE Otro_id=%d" % id)
@@ -457,7 +459,8 @@ def get_otro_by_id(id):
             vals.append(dict(zip(val.keys(), val)))
 
         otr = {'id': o['id'], 'nombre': o['nombre'], 'puntuacion':
-               o['puntuacion'], 'images': imgs, 'valoraciones': vals}
+               o['puntuacion'], 'precio': o['precio'], 'images': imgs,
+               'valoraciones': vals}
         return jsonify(otr)
     except Exception:
         app.logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
