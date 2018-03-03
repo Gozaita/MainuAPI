@@ -177,12 +177,14 @@ def get_bocadillos():
         for b in bocs:
             ings_id = cx.execute("SELECT * FROM IngredienteBocadillo " +
                                  "WHERE Bocadillo_id=%d" % b['id'])
-            ings = {}
+            ings = []
             for i in ings_id:
                 ing = cx.execute("SELECT Ingrediente.nombre FROM " +
                                  "Ingrediente WHERE Ingrediente.id=%d"
                                  % i['Ingrediente_id']).fetchone()
-                ings[i['Ingrediente_id']] = ing['nombre']
+                ings.append({'id': i['Ingrediente_id'],
+                            'nombre': ing['nombre']})
+
             boc = {'id': b['id'], 'nombre': b['nombre'], 'precio': b['precio'],
                    'puntuacion': b['puntuacion'], 'ingredientes': ings}
             bocs_final.append(boc)
@@ -208,7 +210,8 @@ def get_bocadillo_by_id(id):
             ing = cx.execute("SELECT Ingrediente.nombre FROM " +
                              "Ingrediente WHERE Ingrediente.id=%d"
                              % i['Ingrediente_id']).fetchone()
-            ings.append(ing['nombre'])
+            ings.append({'id': i['Ingrediente_id'],
+                        'nombre': ing['nombre']})
 
         imgs = {}
         im = cx.execute("SELECT * FROM FotoBocadillo " +
@@ -510,7 +513,7 @@ def verify_token(idToken):
         app.logger.info("Token validado")
         return userid, name, mail, pic
     except ValueError:
-        app.logger.warning("La validación del token ha resultado negativa")
+        app.logger.exception("La validación del token ha resultado negativa")
         return None
 
 #############################################
