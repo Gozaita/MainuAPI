@@ -10,11 +10,13 @@ import logging
 import sys
 import json
 
-URI = open('.mainudb', 'r').read()
-CLIENT_ID = open('.client_id', 'r').read()
-LOG_PATH = 'log/mainu.log'
+ROOT = ''  # ${ROOT_PATH} for production mode
 
-UPD_PATH = 'updates/'
+URI = open(ROOT + '.mainudb', 'r').read()
+CLIENT_ID = open(ROOT + '.client_id', 'r').read()
+LOG_PATH = ROOT + 'log/mainu.log'
+
+UPD_PATH = ROOT + 'last_updates/'
 UPD_MAIN = UPD_PATH + 'main.json'
 UPD_BOCD = UPD_PATH + 'bocadillos.json'
 UPD_PLAT = UPD_PATH + 'platos.json'
