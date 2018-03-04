@@ -565,7 +565,7 @@ def get_otros():
         otros_final = []
         for o in otros:
             imgs = get_imgs('otros', o['id'], cx)
-            if imgs is not None:
+            if imgs:
                 imgs = [imgs[0]]
 
             otro = {'id': o['id'], 'nombre': o['nombre'], 'precio':
@@ -647,7 +647,7 @@ def last_update(type, id=None):
                     "Devuelve última fecha de modificación")
     res = ''
     if id is None:
-        if type == 'bocadillo' or type == 'menu' or type == 'otros':
+        if type == 'bocadillos' or type == 'menu' or type == 'otros':
             app.logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                             "type: %s" % type)
             res = upd_main[type]
