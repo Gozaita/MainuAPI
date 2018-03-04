@@ -209,14 +209,18 @@ def get_images(type, id, cx=None):
         if cx is None:
             cx = db.connect()
 
-        ims = cx.execute("SELECT * FROM %s " % ft +
-                         "WHERE %s=%d " % (cl, id) +
-                         "AND visible=True ORDER BY oficial DESC")
+        ims = cx.execute("SELECT i.id, i.ruta, i.Usuario_id, " +
+                         "u.nombre, u.foto, u.verificado FROM %s AS i " % ft +
+                         "INNER JOIN Usuario AS u ON u.id=Usuario_id " +
+                         "WHERE visible=True AND %s=%d " % (cl, id) +
+                         "ORDER BY oficial DESC")
         imgs = []
         if ims is not None:
             for i in ims:
                 img = OTH_PATH + i['ruta']
-                imgs.append({'id': i['id'], 'url': img})
+                us = {'id': i['Usuario_id'], 'nombre': i['nombre'],
+                      'foto': i['foto'], 'verificado': i['verificado']}
+                imgs.append({'id': i['id'], 'url': img, 'usuario': us})
 
         return imgs
     except Exception:

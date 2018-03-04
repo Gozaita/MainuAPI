@@ -195,18 +195,6 @@ Para algunos objetos se detallan versiones resumidas de los mismos. Estas versio
 ```
 > **Nota**: en este caso, la lista `images` contiene un único elemento, la imagen oficial para el plato (en caso de existir).
 
-#### Imagen
-```
-{
-  "id": 7,
-  "url": "https://server.mainu.eus/external/images/platos/7_2018-01-01--00-00-00-000.jpg"
-}
-```
-
-- `id` es el identificador de la imagen (uso interno).
-
-- `url` es la URL en la que se encuentra la imagen en cuestión.
-
 #### Ingrediente
 ```
 {
@@ -218,6 +206,21 @@ Para algunos objetos se detallan versiones resumidas de los mismos. Estas versio
 - `id` es el identificador del ingrediente (uso interno).
 
 - `nombre` es el nombre en castellano del ingrediente.
+
+#### Imagen
+```
+{
+  "id": 7,
+  "url": "https://server.mainu.eus/external/images/platos/7_2018-01-01--00-00-00-000.jpg"
+  "usuario": {...}
+}
+```
+
+- `id` es el identificador de la imagen (uso interno).
+
+- `url` es la URL en la que se encuentra la imagen en cuestión.
+
+- `usuario` contiene la información del usuario que ha enviado la imagen, en un objeto de tipo [`Usuario`](#usuario).
 
 #### Valoración
 ```
