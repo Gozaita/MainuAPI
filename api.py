@@ -2,7 +2,7 @@
 from flask import Flask, jsonify, redirect, request
 from sqlalchemy import create_engine
 from time import localtime, strftime
-from logging.handlers import TimedRotatingFileHandler
+from logging import FileHandler
 from google.oauth2 import id_token
 from google.auth.transport import requests
 import os
@@ -50,10 +50,8 @@ def log_setup(path):
     log.write("##############################################\n")
     log.close()
 
-    handler = TimedRotatingFileHandler(filename=path,
-                                       when='midnight',
-                                       backupCount=10,
-                                       encoding="utf-8")
+    handler = FileHandler(filename=path,
+                          encoding="utf-8")
     handler.setLevel(logging.DEBUG)
     formatter = logging.Formatter('[%(asctime)s]: %(levelname)s - ' +
                                   '%(funcName)s - %(message)s')
