@@ -96,7 +96,7 @@ Para algunos objetos se detallan versiones resumidas de los mismos. Estas versio
 
 - `id` es el identificador del bocadillo (uso interno).
 
-- `images` es una lista de elementos tipo [`Imagen`](#imagen) correspondientes al bocadillo. Muestra únicamente las imágenes marcadas como visibles. Esta lista puede estar vacía si no hay ninguna imagen para el elemento.
+- `images` es una lista de elementos tipo [`Imagen`](#imagen) correspondientes al bocadillo. Muestra únicamente las imágenes marcadas como visibles. Esta lista puede estar vacía si no hay ninguna imagen para el elemento. La primera imagen de la lista será la oficial.
 
 - `ingredientes` es la lista de elementos tipo [`Ingrediente`](#ingrediente) correspondientes al bocadillo.
 
@@ -136,7 +136,7 @@ Para algunos objetos se detallan versiones resumidas de los mismos. Estas versio
 
 - `id` es el identificador del plato (uso interno).
 
-- `images` es una lista de elementos tipo [`Imagen`](#imagen) correspondientes al plato. Muestra únicamente las imágenes marcadas como visibles. Esta lista puede estar vacía si no hay ninguna imagen para el elemento.
+- `images` es una lista de elementos tipo [`Imagen`](#imagen) correspondientes al plato. Muestra únicamente las imágenes marcadas como visibles. Esta lista puede estar vacía si no hay ninguna imagen para el elemento. La primera imagen de la lista será la oficial.
 
 - `nombre` es el nombre del plato en castellano.
 
@@ -173,7 +173,7 @@ Para algunos objetos se detallan versiones resumidas de los mismos. Estas versio
 
 - `id` es el identificador del producto (uso interno).
 
-- `images` es una lista de elementos tipo [`Imagen`](#imagen) correspondientes al producto. Muestra únicamente las imágenes marcadas como visibles. Esta lista puede estar vacía si no hay ninguna imagen para el elemento.
+- `images` es una lista de elementos tipo [`Imagen`](#imagen) correspondientes al producto. Muestra únicamente las imágenes marcadas como visibles. Esta lista puede estar vacía si no hay ninguna imagen para el elemento. La primera imagen de la lista será la oficial.
 
 - `nombre` es el nombre del producto en castellano.
 
@@ -220,14 +220,37 @@ Para algunos objetos se detallan versiones resumidas de los mismos. Estas versio
 - `nombre` es el nombre en castellano del ingrediente.
 
 #### Valoración
+```
+{
+  "id": 1,
+  "puntuacion": 4,
+  "texto": "Delicioso bocadillo, aunque echo en falta alguna salsa que lo acompañe.",
+  "usuario": {...}
+}
+```
 
-Las valoraciones son enviadas por la API en las funciones `get_bocadillo`, `get_plato` y `get_otro`. Estas funciones devuelven, entre otros datos, una lista con valoraciones. A pesar de ser valoraciones de diferentes objetos, todas tienen la misma estructura:
+- `id` es el identificador de la valoración (uso interno).
+
+- `puntuacion` es la puntuación otorgada por el autor o autora de la valoración.
+
+- `texto` es el comentario opcional que el usuario puede añadir al enviar una valoración. Es un campo opcional, por lo que puede ser `null`.
+
+- `usuario` contiene la información del usuario que ha realizado la valoración, en un objeto de tipo [`Usuario`](#usuario).
+
+#### Usuario
 ```
 {
   "foto": "https://i.imgur.com/Wc9VOaZ.png",
-  "id": 1,
+  "id": "0",
   "nombre": "Mainu Team",
-  "puntuacion": 3,
-  "texto": "Esta es una valoración de prueba. El usuario puede escribir hasta 280 caracteres."
+  "verificado": 1
 }
 ```
+
+- `foto` es la URL donde se encuentra la foto de perfil del usuario.
+
+- `id` es el identificador del usuario (uso interno).
+
+- `nombre` es el nombre completo del usuario.
+
+- `verificado` indica si es un usuario verificado o no.

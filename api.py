@@ -50,10 +50,9 @@ def log_setup(path):
     log.write("##############################################\n")
     log.close()
 
-    handler = TimedRotatingFileHandler(path,
-                                       when="D",
-                                       interval=1,
-                                       backupCount=7,
+    handler = TimedRotatingFileHandler(filename=path,
+                                       when='midnight',
+                                       backupCount=10,
                                        encoding="utf-8")
     handler.setLevel(logging.DEBUG)
     formatter = logging.Formatter('[%(asctime)s]: %(levelname)s - ' +
