@@ -186,23 +186,42 @@ def verify_token(idToken):
 # TODO: add_image(idToken, type, id, image)
 
 
-def get_images(type, id, cx=None):
+def get_imgs(type, id, cx=None):
     """
     Devuelve todas las imágenes asociadas a un elemento con un <id> del
     tipo <type> que se especifique. Si no existe una conexión creada con
     la base de datos (no se le pasa el parámetro <cx>), intentará crear
     una nueva. La primera imagen de la lista es la marcada como 'oficial'.
+    Cada imagen contiene:
+    - id
+    - url
+    - usuario:
+        - id
+        - nombre
+        - foto
+        - verificado
+    Tareas que realiza:
+    1. En función del parámetro <type>, inicializa las variables que se
+       utilizarán. Si el parámetro no se corresponde con ninguno de los
+       esperados, levantará una excepción.
+    2. Si no se ha pasado el parámetro <cx>, se inicia una conexión.
+    3. Realiza una búsqueda de las imágenes asociadas al <id> del elemento,
+       recuperando también los datos del usuario correspondiente a cada imagen.
+    4. Se estructuran los datos recuperados y se devuelve un array de imágenes.
     """
     try:
         if type == 'bocadillos':
             ft = 'FotoBocadillo'
             cl = 'Bocadillo_id'
+            path = BOC_PATH
         elif type == 'menu':
             ft = 'FotoPlato'
             cl = 'Plato_id'
+            path = PLT_PATH
         elif type == 'otros':
             ft = 'FotoOtro'
             cl = 'Otro_id'
+            path = OTH_PATH
         else:
             raise Exception
 
@@ -217,7 +236,7 @@ def get_images(type, id, cx=None):
         imgs = []
         if ims is not None:
             for i in ims:
-                img = OTH_PATH + i['ruta']
+                img = path + i['ruta']
                 us = {'id': i['Usuario_id'], 'nombre': i['nombre'],
                       'foto': i['foto'], 'verificado': i['verificado']}
                 imgs.append({'id': i['id'], 'url': img, 'usuario': us})
@@ -241,7 +260,25 @@ def get_vals(type, id, cx=None):
     Devuelve todas las valoraciones asociadas a un elemento con un <id> del
     tipo <type> que se especifique. Si no existe una conexión creada con
     la base de datos (no se le pasa el parámetro <cx>), intentará crear
-    una nueva.
+    una nueva. Cada valoración contiene:
+    - id
+    - puntuación
+    - texto
+    - usuario:
+        - id
+        - nombre
+        - foto
+        - verificado
+    Tareas que realiza:
+    1. En función del parámetro <type>, inicializa las variables que se
+       utilizarán. Si el parámetro no se corresponde con ninguno de los
+       esperados, levantará una excepción.
+    2. Si no se ha pasado el parámetro <cx>, se inicia una conexión.
+    3. Realiza una búsqueda de las valoraciones asociadas al <id> del elemento,
+       recuperando también los datos del usuario correspondiente a cada
+       valoración.
+    4. Se estructuran los datos recuperados y se devuelve un array de
+       valoraciones.
     """
     try:
         if type == 'bocadillos':
@@ -283,6 +320,43 @@ def get_vals(type, id, cx=None):
 #############################################
 
 
+def get_ings(id, cx=None):
+    """
+    Devuelve todos los ingredientes asociados al bocadillo con el <id>
+    especificado. Si no existe una conexión creada con la base de datos
+    (no se le pasa el parámetro <cx>), intentará crear una nueva. cada
+    ingrediente contiene:
+    - id
+    - nombre
+    Tareas que realiza:
+    1. Si no se ha pasado el parámetro <cx>, se inicia una conexión.
+    2. Realiza una búsqueda de los ingredientes asociados al <id> del
+       bocadillo, recuperando datos de las tablas IngredienteBocadillo
+       (relaciones entre ingredientes y bocadillos) e Ingrediente
+       (relación entre id y nombre de ingrediente).
+    4. Se estructuran los datos recuperados y se devuelve un array de
+       valoraciones.
+    """
+    try:
+        if cx is None:
+            cx = db.connect()
+
+        ins = cx.execute("SELECT ib.Ingrediente_id, i.nombre FROM " +
+                         "IngredienteBocadillo AS ib INNER JOIN Ingrediente " +
+                         "AS i ON Ingrediente_id=i.id "
+                         "WHERE Bocadillo_id=%d" % id)
+        ings = []
+        for i in ins:
+            ing = {'id': i['Ingrediente_id'], 'nombre': i['nombre']}
+            ings.append(ing)
+
+        return ings
+    except Exception:
+        app.logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                             "Ha ocurrido una excepción durante la petición")
+        return None
+
+
 @app.route("/bocadillos", methods=["GET"])
 def get_bocadillos():
     """
@@ -295,17 +369,11 @@ def get_bocadillos():
     Tareas que realiza:
     1. Recoge todas las filas y columnas de la tabla Bocadillo.
     2. Para cada elemento de los recogidos:
-       2.1. Recoge todas las filas y columnas de la tabla IngredienteBocadillo
-            donde el Bocadillo_id se corresponde con el id del elemento
-            en cuestión.
-       2.2. Para cada elemento de los recogidos en el 2.1, acude a la tabla
-            Ingrediente para recuperar el nombre utilizando el Ingrediente_id.
-       2.3. Todos los nombres de los ingredientes son añadidos a un array,
-            junto a su id.
-       2.4. Se insertan en un diccionario todos los elementos que se van a
-            devolver para cada bocadillo, incluyendo la lista de ingredientes.
-    3. Cada elemento, tras realizar las tareas del punto 2, se añaden a un
-       array, que se devuelve en formato JSON.
+       2.1. Llama a get_ings para recoger los ingredientes correspondientes
+            a este bocadillo.
+       2.2. Introduce en un diccionario todos los elementos a devolver,
+            incluyendo la lista de ingredientes.
+    3. Se devuelve una lista en formato JSON.
     """
     app.logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                     "Devuelve lista completa de los bocadillos")
@@ -314,16 +382,7 @@ def get_bocadillos():
         bocs = cx.execute("SELECT * FROM Bocadillo")
         bocs_final = []
         for b in bocs:
-            ings_id = cx.execute("SELECT * FROM IngredienteBocadillo " +
-                                 "WHERE Bocadillo_id=%d" % b['id'])
-            ings = []
-            for i in ings_id:
-                ing = cx.execute("SELECT Ingrediente.nombre FROM " +
-                                 "Ingrediente WHERE Ingrediente.id=%d"
-                                 % i['Ingrediente_id']).fetchone()
-                ings.append({'id': i['Ingrediente_id'],
-                            'nombre': ing['nombre']})
-
+            ings = get_ings(b['id'], cx)
             boc = {'id': b['id'], 'nombre': b['nombre'], 'precio': b['precio'],
                    'puntuacion': b['puntuacion'], 'ingredientes': ings}
             bocs_final.append(boc)
@@ -336,23 +395,31 @@ def get_bocadillos():
 
 @app.route("/bocadillos/<int:id>", methods=["GET"])
 def get_bocadillo_by_id(id):
+    """
+    Devuelve la información asociada a un bocadillo con el <id> especificado:
+    - id
+    - nombre
+    - precio
+    - puntuacion
+    - ingredientes (via get_ings)
+    - images (via get_imgs)
+    - valoraciones (via get_vals)
+    Tareas que realiza:
+    1. Recupera de la base de datos la información de la tabla Bocadillo
+       correspondiente al elemento con el <id> especificado.
+    2. Realiza llamadas a las funciones get_ings, get_imgs y get_vals para
+       recuperar los ingredientes, imágenes y valoraciones.
+    3. Se estructuran los datos recuperados y se devuelve la información
+       en formato JSON.
+    """
     app.logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                     "Devuelve bocadillo: id %d" % id)
     try:
         cx = db.connect()
         b = cx.execute("SELECT * FROM Bocadillo WHERE Bocadillo.id=%d"
                        % id).fetchone()
-        ings_id = cx.execute("SELECT * FROM IngredienteBocadillo " +
-                             "WHERE Bocadillo_id=%d" % id)
-        ings = []
-        for i in ings_id:
-            ing = cx.execute("SELECT Ingrediente.nombre FROM " +
-                             "Ingrediente WHERE Ingrediente.id=%d"
-                             % i['Ingrediente_id']).fetchone()
-            ings.append({'id': i['Ingrediente_id'],
-                        'nombre': ing['nombre']})
-
-        imgs = get_images('bocadillos', id, cx)
+        ings = get_ings(id, cx)
+        imgs = get_imgs('bocadillos', id, cx)
         vals = get_vals('bocadillos', id, cx)
 
         boc = {'id': b['id'], 'nombre': b['nombre'], 'precio': b['precio'],
@@ -386,17 +453,16 @@ def get_menu():
        en la columna 'actual'. Esto hace que únicamente recoja los elementos
        que se encuentran en el menú del día.
     2. Para cada elemento de los recogidos:
-       2.1. Recoge de la tabla FotoPlato el campo ruta de la primera fila
-            cuyo Plato_id coincida con el del elemento de la iteración, y tenga
-            el valor True en los campos 'oficial' y 'visible'. Si se ha
-            devuelto una imagen (im is not None), se establece la ruta
-            completa para la imagen del plato añadiéndole el prefijo definido
-            al inicio (PLT_PATH).
+       2.1. Llama a get_imgs para recuperar las imágenes asociadas al plato.
+            Si la lista recuperada no está vacía, se obtiene su primer elemento
+            (imagen oficial) y se descarta el resto. NOTA: Aunque solamente se
+            envíe un elemento, éste se encuentra dentro de un array para ser
+            coherente con la estructura del objeto Plato ('images' es array).
        2.2. Se insertan en un diccionario todos los elementos que se van a
-            devolver para cada plato, incluyendo la ruta de la imagen.
+            devolver para cada plato.
        2.3. Se comprueba si el tipo del plato es 1 (primero), 2 (segundo)
             o 3 (postre). En función de ello, se añade a un array u otro.
-    3. Se deuvelve en formato JSON el diccionario con los tres arrays.
+    3. Se devuelve en formato JSON el diccionario con los tres arrays.
     """
     app.logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                     "Devuelve menú del día")
@@ -407,14 +473,9 @@ def get_menu():
         sg = []
         ps = []
         for p in menu:
-            imgs = []
-            im = cx.execute("SELECT * FROM FotoPlato WHERE " +
-                            "FotoPlato.Plato_id=%d AND " % p['id'] +
-                            "FotoPlato.oficial=True AND " +
-                            "FotoPlato.visible=True").fetchone()
-            if im is not None:
-                img = PLT_PATH + im['ruta']
-                imgs.append({'id': im['id'], 'url': img})
+            imgs = get_imgs('menu', p['id'], cx)
+            if imgs:
+                imgs = [imgs[0]]
 
             pl = {'id': p['id'], 'nombre': p['nombre'],
                   'puntuacion': p['puntuacion'], 'images': imgs}
@@ -433,6 +494,23 @@ def get_menu():
 
 @app.route("/menu/<int:id>", methods=["GET"])
 def get_plato_by_id(id):
+    """
+    Devuelve la información asociada a un plato con el <id> especificado:
+    - id
+    - nombre
+    - puntuacion
+    - descripcion
+    - tipo
+    - images (via get_imgs)
+    - valoraciones (via get_vals)
+    Tareas que realiza:
+    1. Recupera de la base de datos la información de la tabla Plato
+       correspondiente al elemento con el <id> especificado.
+    2. Realiza llamadas a las funciones get_imgs y get_vals para recuperar las
+       imágenes y valoraciones.
+    3. Se estructuran los datos recuperados y se devuelve la información
+       en formato JSON.
+    """
     app.logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                     "Devuelve plato: id %d" % id)
     try:
@@ -440,7 +518,7 @@ def get_plato_by_id(id):
         p = cx.execute("SELECT * FROM Plato WHERE Plato.id=%d"
                        % id).fetchone()
 
-        imgs = get_images('menu', id, cx)
+        imgs = get_imgs('menu', id, cx)
         vals = get_vals('menu', id, cx)
 
         plt = {'id': p['id'], 'nombre': p['nombre'], 'puntuacion':
@@ -469,12 +547,11 @@ def get_otros():
     Tareas que realiza:
     1. Recoge todas las filas y columnas de la tabla Otro.
     2. Para cada elemento de los recogidos:
-       2.1. Recoge de la tabla FotoOtro el campo ruta de la primera fila
-            cuyo Otro_id coincida con el del elemento de la iteración, y tenga
-            el valor True en los campos 'oficial' y 'visible'. Si se ha
-            devuelto una imagen (im is not None), se establece la ruta
-            completa para la imagen del plato añadiéndole el prefijo definido
-            al inicio (OTH_PATH).
+       2.1. Llama a get_imgs para recuperar las imágenes asociadas al producto.
+            Si la lista recuperada no está vacía, se obtiene su primer elemento
+            (imagen oficial) y se descarta el resto. NOTA: Aunque solamente se
+            envíe un elemento, éste se encuentra dentro de un array para ser
+            coherente con la estructura del objeto Otro ('images' es array).
        2.2. Se insertan en un diccionario todos los elementos que se van a
             devolver para cada producto, incluyendo la ruta de la imagen.
     3. Cada elemento, tras realizar las tareas del punto 2, se añade a un
@@ -487,15 +564,9 @@ def get_otros():
         otros = cx.execute("SELECT * FROM Otro")
         otros_final = []
         for o in otros:
-            imgs = []
-            im = cx.execute("SELECT FotoOtro.ruta FROM " +
-                            "FotoOtro WHERE " +
-                            "FotoOtro.Otro_id=%d " % o['id'] +
-                            "AND FotoOtro.oficial=True AND " +
-                            "FotoOtro.visible=True").fetchone()
-            if im is not None:
-                img = OTH_PATH + im['ruta']
-                imgs.append({'id': im['id'], 'url': img})
+            imgs = get_imgs('otros', o['id'], cx)
+            if imgs is not None:
+                imgs = [imgs[0]]
 
             otro = {'id': o['id'], 'nombre': o['nombre'], 'precio':
                     o['precio'], 'puntuacion': o['puntuacion'], 'images': imgs}
@@ -509,6 +580,23 @@ def get_otros():
 
 @app.route("/otros/<int:id>", methods=["GET"])
 def get_otro_by_id(id):
+    """
+    Devuelve la información asociada a un producto de la categoría 'otros'
+    con el <id> especificado:
+    - id
+    - nombre
+    - puntuacion
+    - precio
+    - images (via get_imgs)
+    - valoraciones (via get_vals)
+    Tareas que realiza:
+    1. Recupera de la base de datos la información de la tabla Otro
+       correspondiente al elemento con el <id> especificado.
+    2. Realiza llamadas a las funciones get_imgs y get_vals para recuperar las
+       imágenes y valoraciones.
+    3. Se estructuran los datos recuperados y se devuelve la información
+       en formato JSON.
+    """
     app.logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                     "Devuelve otro: id %d" % id)
     try:
@@ -516,7 +604,7 @@ def get_otro_by_id(id):
         o = cx.execute("SELECT * FROM Otro WHERE Otro.id=%d"
                        % id).fetchone()
 
-        imgs = get_images('otros', id, cx)
+        imgs = get_imgs('otros', id, cx)
         vals = get_vals('otros', id, cx)
 
         otr = {'id': o['id'], 'nombre': o['nombre'], 'puntuacion':
@@ -544,11 +632,22 @@ def last_update(type, id=None):
     - otros
     Si se pasa además el parámetro <id> se devolverá información del
     bocadillo, plato del menú u otro (p. ej.: /last_update/menu/5).
+    Tareas que realiza:
+    1. Comprueba si se ha pasado un <id> o no.
+    2. Si no se ha pasado un <id>, se buscará en el diccionario upd_main el
+       elemento <type> (en caso de que se haya pasado un tipo válido) y se
+       devolverá su valor.
+    3. Si se ha pasado un <id>, se acudirá a upd_bocd, upd_plat o upd_oths
+       dependiendo del tipo y se buscará el elemento <id> en uno de esos
+       diccionarios, devolviendo el valor obtenido.
+    4. En cualquier caso, si el tipo no es válido, se devolverá una cadena
+       vacía.
     """
     app.logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                     "Devuelve última fecha de modificación")
+    res = ''
     if id is None:
-        if type == 'bocadillo' or 'menu' or 'otros':
+        if type == 'bocadillo' or type == 'menu' or type == 'otros':
             app.logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                             "type: %s" % type)
             res = upd_main[type]
