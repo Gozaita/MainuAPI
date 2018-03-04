@@ -142,59 +142,6 @@ upd_main, upd_bocd, upd_plat, upd_oths = updates_setup(UPD_MAIN, UPD_BOCD,
 #############################################
 
 #############################################
-# Imágenes
-#############################################
-
-
-# TODO: add_image(idToken, type, id, image)
-
-
-def get_images(type, id, cx=None):
-    """
-    Devuelve todas las imágenes asociadas a un elemento con un <id> del
-    tipo <type> que se especifique. Si no existe una conexión creada con
-    la base de datos (no se le pasa el parámetro <cx>), intentará crear
-    una nueva. La primera imagen de la lista es la marcada como 'oficial'.
-    """
-    try:
-        if type == 'bocadillos':
-            ft = 'FotoBocadillo'
-            cl = 'Bocadillo_id'
-        elif type == 'menu':
-            ft = 'FotoPlato'
-            cl = 'Plato_id'
-        elif type == 'otros':
-            ft = 'FotoOtro'
-            cl = 'Otro_id'
-        else:
-            raise Exception
-
-        if cx is None:
-            cx = db.connect()
-
-        ims = cx.execute("SELECT * FROM %s " % ft +
-                         "WHERE %s=%d " % (cl, id) +
-                         "AND visible=True ORDER BY oficial DESC;")
-        imgs = []
-        if ims is not None:
-            for i in ims:
-                img = OTH_PATH + i['ruta']
-                imgs.append({'id': i['id'], 'url': img})
-
-        return imgs
-    except Exception:
-        app.logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
-                             "Ha ocurrido una excepción durante la petición")
-        return None
-
-#############################################
-# Valoraciones
-#############################################
-
-
-# TODO: add_valoration(idToken, type, id, valoration)
-
-#############################################
 # Usuarios
 #############################################
 
@@ -230,6 +177,102 @@ def verify_token(idToken):
         return userid, name, mail, pic
     except ValueError:
         app.logger.exception("La validación del token ha resultado negativa")
+        return None
+
+#############################################
+# Imágenes
+#############################################
+
+
+# TODO: add_image(idToken, type, id, image)
+
+
+def get_images(type, id, cx=None):
+    """
+    Devuelve todas las imágenes asociadas a un elemento con un <id> del
+    tipo <type> que se especifique. Si no existe una conexión creada con
+    la base de datos (no se le pasa el parámetro <cx>), intentará crear
+    una nueva. La primera imagen de la lista es la marcada como 'oficial'.
+    """
+    try:
+        if type == 'bocadillos':
+            ft = 'FotoBocadillo'
+            cl = 'Bocadillo_id'
+        elif type == 'menu':
+            ft = 'FotoPlato'
+            cl = 'Plato_id'
+        elif type == 'otros':
+            ft = 'FotoOtro'
+            cl = 'Otro_id'
+        else:
+            raise Exception
+
+        if cx is None:
+            cx = db.connect()
+
+        ims = cx.execute("SELECT * FROM %s " % ft +
+                         "WHERE %s=%d " % (cl, id) +
+                         "AND visible=True ORDER BY oficial DESC")
+        imgs = []
+        if ims is not None:
+            for i in ims:
+                img = OTH_PATH + i['ruta']
+                imgs.append({'id': i['id'], 'url': img})
+
+        return imgs
+    except Exception:
+        app.logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                             "Ha ocurrido una excepción durante la petición")
+        return None
+
+#############################################
+# Valoraciones
+#############################################
+
+
+# TODO: add_valoration(idToken, type, id, valoration)
+
+
+def get_vals(type, id, cx=None):
+    """
+    Devuelve todas las valoraciones asociadas a un elemento con un <id> del
+    tipo <type> que se especifique. Si no existe una conexión creada con
+    la base de datos (no se le pasa el parámetro <cx>), intentará crear
+    una nueva.
+    """
+    try:
+        if type == 'bocadillos':
+            vt = 'ValoracionBocadillo'
+            cl = 'Bocadillo_id'
+        elif type == 'menu':
+            vt = 'ValoracionPlato'
+            cl = 'Plato_id'
+        elif type == 'otros':
+            vt = 'ValoracionOtro'
+            cl = 'Otro_id'
+        else:
+            raise Exception
+
+        if cx is None:
+            cx = db.connect()
+
+        vls = cx.execute("SELECT v.id, v.puntuacion, v.texto, v.Usuario_id, " +
+                         "u.nombre, u.foto, u.verificado FROM %s AS v " % vt +
+                         "INNER JOIN Usuario AS u ON u.id=Usuario_id " +
+                         "WHERE visible=True AND %s=%d" % (cl, id))
+        vals = []
+        if vls is not None:
+            for v in vls:
+                us = {'id': v['Usuario_id'], 'nombre': v['nombre'],
+                      'foto': v['foto'], 'verificado': v['verificado']}
+                val = {'id': v['id'], 'puntuacion': v['puntuacion'],
+                       'texto': v['texto'], 'usuario': us}
+                vals.append(val)
+
+        return vals
+    except Exception:
+        app.logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                             "Ha ocurrido una excepción durante la petición")
         return None
 
 #############################################
@@ -306,18 +349,8 @@ def get_bocadillo_by_id(id):
             ings.append({'id': i['Ingrediente_id'],
                         'nombre': ing['nombre']})
 
-        imgs = fetch_images('bocadillos', id, cx)
-
-        vals_id = cx.execute("SELECT * FROM ValoracionBocadillo " +
-                             "WHERE Bocadillo_id=%d" % id)
-        vals = []
-        for v in vals_id:
-            val = cx.execute("SELECT v.id, v.texto, v.puntuacion, " +
-                             "u.nombre, u.foto FROM ValoracionBocadillo " +
-                             "AS v INNER JOIN Usuario AS u ON " +
-                             "v.Usuario_id=u.id WHERE v.id=%d " % v['id'] +
-                             "AND v.visible=True").fetchone()
-            vals.append(dict(zip(val.keys(), val)))
+        imgs = get_images('bocadillos', id, cx)
+        vals = get_vals('bocadillos', id, cx)
 
         boc = {'id': b['id'], 'nombre': b['nombre'], 'precio': b['precio'],
                'puntuacion': b['puntuacion'], 'ingredientes': ings,
@@ -404,18 +437,8 @@ def get_plato_by_id(id):
         p = cx.execute("SELECT * FROM Plato WHERE Plato.id=%d"
                        % id).fetchone()
 
-        imgs = fetch_images('menu', id, cx)
-
-        vals_id = cx.execute("SELECT * FROM ValoracionPlato " +
-                             "WHERE Plato_id=%d" % id)
-        vals = []
-        for v in vals_id:
-            val = cx.execute("SELECT v.id, v.texto, v.puntuacion, " +
-                             "u.nombre, u.foto FROM ValoracionPlato " +
-                             "AS v INNER JOIN Usuario AS u ON " +
-                             "v.Usuario_id=u.id WHERE v.id=%d " % v['id'] +
-                             "AND v.visible=True").fetchone()
-            vals.append(dict(zip(val.keys(), val)))
+        imgs = get_images('menu', id, cx)
+        vals = get_vals('menu', id, cx)
 
         plt = {'id': p['id'], 'nombre': p['nombre'], 'puntuacion':
                p['puntuacion'], 'descripcion': p['descripcion'],
@@ -490,18 +513,8 @@ def get_otro_by_id(id):
         o = cx.execute("SELECT * FROM Otro WHERE Otro.id=%d"
                        % id).fetchone()
 
-        imgs = fetch_images('otros', id, cx)
-
-        vals_id = cx.execute("SELECT * FROM ValoracionOtro " +
-                             "WHERE Otro_id=%d" % id)
-        vals = []
-        for v in vals_id:
-            val = cx.execute("SELECT v.id, v.texto, v.puntuacion, " +
-                             "u.nombre, u.foto FROM ValoracionOtro " +
-                             "AS v INNER JOIN Usuario AS u ON " +
-                             "v.Usuario_id=u.id WHERE v.id=%d " % v['id'] +
-                             "AND v.visible=True").fetchone()
-            vals.append(dict(zip(val.keys(), val)))
+        imgs = get_images('otros', id, cx)
+        vals = get_vals('otros', id, cx)
 
         otr = {'id': o['id'], 'nombre': o['nombre'], 'puntuacion':
                o['puntuacion'], 'precio': o['precio'], 'images': imgs,
