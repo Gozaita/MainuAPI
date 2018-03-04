@@ -142,6 +142,97 @@ upd_main, upd_bocd, upd_plat, upd_oths = updates_setup(UPD_MAIN, UPD_BOCD,
 #############################################
 
 #############################################
+# Imágenes
+#############################################
+
+
+# TODO: add_image(idToken, type, id, image)
+
+
+def get_images(type, id, cx=None):
+    """
+    Devuelve todas las imágenes asociadas a un elemento con un <id> del
+    tipo <type> que se especifique. Si no existe una conexión creada con
+    la base de datos (no se le pasa el parámetro <cx>), intentará crear
+    una nueva. La primera imagen de la lista es la marcada como 'oficial'.
+    """
+    try:
+        if type == 'bocadillos':
+            ft = 'FotoBocadillo'
+            cl = 'Bocadillo_id'
+        elif type == 'menu':
+            ft = 'FotoPlato'
+            cl = 'Plato_id'
+        elif type == 'otros':
+            ft = 'FotoOtro'
+            cl = 'Otro_id'
+        else:
+            raise Exception
+
+        if cx is None:
+            cx = db.connect()
+
+        ims = cx.execute("SELECT * FROM %s " % ft +
+                         "WHERE %s=%d " % (cl, id) +
+                         "AND visible=True ORDER BY oficial DESC;")
+        imgs = []
+        if ims is not None:
+            for i in ims:
+                img = OTH_PATH + i['ruta']
+                imgs.append({'id': i['id'], 'url': img})
+
+        return imgs
+    except Exception:
+        app.logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                             "Ha ocurrido una excepción durante la petición")
+        return None
+
+#############################################
+# Valoraciones
+#############################################
+
+
+# TODO: add_valoration(idToken, type, id, valoration)
+
+#############################################
+# Usuarios
+#############################################
+
+
+# TODO: add_user(id, nombre, mail, foto)
+
+
+def verify_token(idToken):
+    """
+    Verifica la integridad del idToken entrante:
+    1. La función verify_oauth2_token comprueba:
+       - Que está firmado por Google.
+       - Que el valor del campo <aud> se correponde con el CLIENT_ID de MainU.
+       - Que el token no ha caducado.
+    2. Se comprueba, además:
+       - Que el valor del campo <iss> es accounts.google.com (o con HTTPS).
+    En caso de fallar, se levanta un ValueError y devuelve un userid 'None'.
+    """
+    try:
+        app.logger.info("Verifica la integridad del token recibido")
+        idinfo = id_token.verify_oauth2_token(idToken, requests.Request(),
+                                              CLIENT_ID)
+        if idinfo['iss'] not in ['accounts.google.com',
+                                 'https://accounts.google.com']:
+            raise ValueError('Wrong issuer.')
+
+        userid = idinfo['sub']
+        name = idinfo['name']
+        mail = idinfo['email']
+        pic = idinfo['picture']
+
+        app.logger.info("Token validado")
+        return userid, name, mail, pic
+    except ValueError:
+        app.logger.exception("La validación del token ha resultado negativa")
+        return None
+
+#############################################
 # Bocadillos
 #############################################
 
@@ -215,23 +306,7 @@ def get_bocadillo_by_id(id):
             ings.append({'id': i['Ingrediente_id'],
                         'nombre': ing['nombre']})
 
-        imgs = []
-        im = cx.execute("SELECT * FROM FotoBocadillo " +
-                        "WHERE FotoBocadillo.Bocadillo_id=%d " % id +
-                        "AND FotoBocadillo.visible=True AND " +
-                        "FotoBocadillo.oficial=True").fetchone()
-        if im is not None:
-            img = BOC_PATH + im['ruta']
-            imgs.append({'id': im['id'], 'url': img})
-
-            ims = cx.execute("SELECT * FROM FotoBocadillo " +
-                             "WHERE FotoBocadillo.Bocadillo_id=%d " % id +
-                             "AND FotoBocadillo.visible=True AND " +
-                             "FotoBocadillo.id!=%d" % im['id'])
-            if ims is not None:
-                for i in ims:
-                    img = BOC_PATH + i['ruta']
-                    imgs.append({'id': i['id'], 'url': img})
+        imgs = fetch_images('bocadillos', id, cx)
 
         vals_id = cx.execute("SELECT * FROM ValoracionBocadillo " +
                              "WHERE Bocadillo_id=%d" % id)
@@ -329,23 +404,7 @@ def get_plato_by_id(id):
         p = cx.execute("SELECT * FROM Plato WHERE Plato.id=%d"
                        % id).fetchone()
 
-        imgs = []
-        im = cx.execute("SELECT * FROM FotoPlato " +
-                        "WHERE FotoPlato.Plato_id=%d " % id +
-                        "AND FotoPlato.visible=True AND " +
-                        "FotoPlato.oficial=True").fetchone()
-        if im is not None:
-            img = PLT_PATH + im['ruta']
-            imgs.append({'id': im['id'], 'url': img})
-
-            ims = cx.execute("SELECT * FROM FotoPlato " +
-                             "WHERE FotoPlato.Plato_id=%d " % id +
-                             "AND FotoPlato.visible=True AND " +
-                             "FotoPlato.id!=%d" % im['id'])
-            if ims is not None:
-                for i in ims:
-                    img = PLT_PATH + i['ruta']
-                    imgs.append({'id': i['id'], 'url': img})
+        imgs = fetch_images('menu', id, cx)
 
         vals_id = cx.execute("SELECT * FROM ValoracionPlato " +
                              "WHERE Plato_id=%d" % id)
@@ -431,23 +490,7 @@ def get_otro_by_id(id):
         o = cx.execute("SELECT * FROM Otro WHERE Otro.id=%d"
                        % id).fetchone()
 
-        imgs = []
-        im = cx.execute("SELECT * FROM FotoOtro " +
-                        "WHERE FotoOtro.Otro_id=%d " % id +
-                        "AND FotoOtro.visible=True AND " +
-                        "FotoOtro.oficial=True").fetchone()
-        if im is not None:
-            img = OTH_PATH + im['ruta']
-            imgs.append({'id': im['id'], 'url': img})
-
-            ims = cx.execute("SELECT * FROM FotoOtro " +
-                             "WHERE FotoOtro.Otro_id=%d " % id +
-                             "AND FotoOtro.visible=True AND " +
-                             "FotoOtro.id!=%d" % im['id'])
-            if ims is not None:
-                for i in ims:
-                    img = OTH_PATH + i['ruta']
-                    imgs.append({'id': i['id'], 'url': img})
+        imgs = fetch_images('otros', id, cx)
 
         vals_id = cx.execute("SELECT * FROM ValoracionOtro " +
                              "WHERE Otro_id=%d" % id)
@@ -467,58 +510,6 @@ def get_otro_by_id(id):
     except Exception:
         app.logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                              "Ha ocurrido una excepción durante la petición")
-        return None
-
-#############################################
-# Imágenes
-#############################################
-
-
-# TODO: add_image(idToken, type, id, image)
-
-#############################################
-# Valoraciones
-#############################################
-
-
-# TODO: add_valoration(idToken, type, id, valoration)
-
-#############################################
-# Usuarios
-#############################################
-
-
-# TODO: add_user(id, nombre, mail, foto)
-
-
-def verify_token(idToken):
-    """
-    Verifica la integridad del idToken entrante:
-    1. La función verify_oauth2_token comprueba:
-       - Que está firmado por Google.
-       - Que el valor del campo <aud> se correponde con el CLIENT_ID de MainU.
-       - Que el token no ha caducado.
-    2. Se comprueba, además:
-       - Que el valor del campo <iss> es accounts.google.com (o con HTTPS).
-    En caso de fallar, se levanta un ValueError y devuelve un userid 'None'.
-    """
-    try:
-        app.logger.info("Verifica la integridad del token recibido")
-        idinfo = id_token.verify_oauth2_token(idToken, requests.Request(),
-                                              CLIENT_ID)
-        if idinfo['iss'] not in ['accounts.google.com',
-                                 'https://accounts.google.com']:
-            raise ValueError('Wrong issuer.')
-
-        userid = idinfo['sub']
-        name = idinfo['name']
-        mail = idinfo['email']
-        pic = idinfo['picture']
-
-        app.logger.info("Token validado")
-        return userid, name, mail, pic
-    except ValueError:
-        app.logger.exception("La validación del token ha resultado negativa")
         return None
 
 #############################################
