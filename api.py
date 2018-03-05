@@ -393,13 +393,13 @@ def get_bocadillos():
     try:
         cx = db.connect()
         bocs = cx.execute("SELECT * FROM Bocadillo")
-        cx.close()
         bocs_final = []
         for b in bocs:
             ings = get_ings(b['id'], cx)
             boc = {'id': b['id'], 'nombre': b['nombre'], 'precio': b['precio'],
                    'puntuacion': b['puntuacion'], 'ingredientes': ings}
             bocs_final.append(boc)
+        cx.close()
         return jsonify(bocs_final)
     except Exception:
         app.logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
