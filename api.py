@@ -225,12 +225,17 @@ def get_imgs(type, id, cx=None):
 
         if cx is None:
             cx = db.connect()
+            isMain = True
+        else:
+            isMain = False
 
         ims = cx.execute("SELECT i.id, i.ruta, i.Usuario_id, " +
                          "u.nombre, u.foto, u.verificado FROM %s AS i " % ft +
                          "INNER JOIN Usuario AS u ON u.id=Usuario_id " +
                          "WHERE visible=True AND %s=%d " % (cl, id) +
                          "ORDER BY oficial DESC")
+        if isMain:
+            cx.close()
         imgs = []
         if ims is not None:
             for i in ims:
@@ -293,11 +298,16 @@ def get_vals(type, id, cx=None):
 
         if cx is None:
             cx = db.connect()
+            isMain = True
+        else:
+            isMain = False
 
         vls = cx.execute("SELECT v.id, v.puntuacion, v.texto, v.Usuario_id, " +
                          "u.nombre, u.foto, u.verificado FROM %s AS v " % vt +
                          "INNER JOIN Usuario AS u ON u.id=Usuario_id " +
                          "WHERE visible=True AND %s=%d" % (cl, id))
+        if isMain:
+            cx.close()
         vals = []
         if vls is not None:
             for v in vls:
@@ -338,11 +348,16 @@ def get_ings(id, cx=None):
     try:
         if cx is None:
             cx = db.connect()
+            isMain = True
+        else:
+            isMain = False
 
         ins = cx.execute("SELECT ib.Ingrediente_id, i.nombre FROM " +
                          "IngredienteBocadillo AS ib INNER JOIN Ingrediente " +
                          "AS i ON Ingrediente_id=i.id "
                          "WHERE Bocadillo_id=%d" % id)
+        if isMain:
+            cx.close()
         ings = []
         for i in ins:
             ing = {'id': i['Ingrediente_id'], 'nombre': i['nombre']}
@@ -378,6 +393,7 @@ def get_bocadillos():
     try:
         cx = db.connect()
         bocs = cx.execute("SELECT * FROM Bocadillo")
+        cx.close()
         bocs_final = []
         for b in bocs:
             ings = get_ings(b['id'], cx)
@@ -419,7 +435,7 @@ def get_bocadillo_by_id(id):
         ings = get_ings(id, cx)
         imgs = get_imgs('bocadillos', id, cx)
         vals = get_vals('bocadillos', id, cx)
-
+        cx.close()
         boc = {'id': b['id'], 'nombre': b['nombre'], 'precio': b['precio'],
                'puntuacion': b['puntuacion'], 'ingredientes': ings,
                'images': imgs, 'valoraciones': vals}
@@ -483,6 +499,7 @@ def get_menu():
                 sg.append(pl)
             else:
                 ps.append(pl)
+        cx.close()
         return jsonify({'primeros': pr, 'segundos': sg, 'postre': ps})
     except Exception:
         app.logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
@@ -518,7 +535,7 @@ def get_plato_by_id(id):
 
         imgs = get_imgs('menu', id, cx)
         vals = get_vals('menu', id, cx)
-
+        cx.close()
         plt = {'id': p['id'], 'nombre': p['nombre'], 'puntuacion':
                p['puntuacion'], 'descripcion': p['descripcion'],
                'tipo': p['tipo'], 'images': imgs, 'valoraciones': vals}
@@ -569,6 +586,7 @@ def get_otros():
             otro = {'id': o['id'], 'nombre': o['nombre'], 'precio':
                     o['precio'], 'puntuacion': o['puntuacion'], 'images': imgs}
             otros_final.append(otro)
+        cx.close()
         return jsonify(otros_final)
     except Exception:
         app.logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
@@ -604,7 +622,7 @@ def get_otro_by_id(id):
 
         imgs = get_imgs('otros', id, cx)
         vals = get_vals('otros', id, cx)
-
+        cx.close()
         otr = {'id': o['id'], 'nombre': o['nombre'], 'puntuacion':
                o['puntuacion'], 'precio': o['precio'], 'images': imgs,
                'valoraciones': vals}
