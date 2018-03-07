@@ -143,9 +143,6 @@ upd_main, upd_bocd, upd_plat, upd_oths = updates_setup(UPD_MAIN, UPD_BOCD,
 #############################################
 
 
-# TODO: add_user(id, nombre, mail, foto)
-
-
 def verify_token(idToken):
     """
     Verifica la integridad del idToken entrante:
@@ -175,6 +172,57 @@ def verify_token(idToken):
     except ValueError:
         app.logger.exception("La validación del token ha resultado negativa")
         return None
+
+
+def add_user(id, nombre, mail, foto, cx=None):
+    app.logger.info("Añade usuario a la base de datos")
+    try:
+        if cx is None:
+            cx = db.connect()
+            isMain = True
+        else:
+            isMain = False
+
+        cx.execute("INSERT INTO Usuario (id, nombre, mail, foto) VALUES " +
+                   "(\"%s\", \"%s\", \"%s\", \"%s\")" % (id, nombre,
+                                                         mail, foto))
+        if isMain:
+            cx.close()
+        return True
+    except Exception:
+        app.logger.exception("Ha ocurrido un error al añadir el usuario")
+        return None
+
+
+def user_exists(id, cx=None):
+    """
+    Comprueba si un usuario existe o no en la base de datos utilizando su <id>.
+    Si el usuario existe, devuelve un objeto de tipo Usuario, con la
+    información del mismo. Si el usuario no existe, devuelve None.
+    """
+    app.logger.info("Comprueba la existencia del usuario: %s" % id)
+    try:
+        if cx is None:
+            cx = db.connect()
+            isMain = True
+        else:
+            isMain = False
+
+        u = cx.execute("SELECT * FROM Usuario WHERE id=\"%s\"" % id)
+
+        if isMain:
+            cx.close()
+
+        if u is not None:
+            user = {'id': u['id'], 'nombre': u['nombre'], 'foto': u['foto'],
+                    'verificado': u['verificado']}
+            return user
+        else:
+            return None
+    except Exception:
+        app.logger.exception("Ha ocurrido un error al comprobar el usuario")
+        return None
+
 
 #############################################
 # Imágenes
