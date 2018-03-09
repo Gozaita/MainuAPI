@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 def setup():
     global CLIENT_ID
-    CLIENT_ID = open(ROOT + '.client_id', 'r').read()
+    CLIENT_ID = open(ROOT + 'sens_data/.client_id', 'r').read()
 
 
 def verify_token(idToken):

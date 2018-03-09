@@ -7,18 +7,16 @@ import sys
 
 ROOT = ''  # ${ROOT_PATH} for production mode
 
-PATH = ROOT + 'last_updates/'
-MAIN = PATH + 'main.json'
-BOCD = PATH + 'bocadillos.json'
-PLAT = PATH + 'platos.json'
-OTHS = PATH + 'otros.json'
-
-USRS = ROOT + 'users.json'
+PATH = ''
+MAIN = ''
+BOCD = ''
+PLAT = ''
+OTHS = ''
 
 logger = logging.getLogger(__name__)
 
 auth = HTTPBasicAuth()
-users = json.load(open(USRS, 'r'))
+users = None
 
 main = {}
 bocd = {}
@@ -34,7 +32,16 @@ def get_pw(username):
 
 
 def setup():
-    global main, bocd, plat, oths
+    global PATH, MAIN, BOCD, PLAT, OTHS, USRS
+    PATH = ROOT + 'last_updates/'
+    MAIN = PATH + 'main.json'
+    BOCD = PATH + 'bocadillos.json'
+    PLAT = PATH + 'platos.json'
+    OTHS = PATH + 'otros.json'
+    users = json.load(open(ROOT + 'sens_data/.users.json', 'r'))
+
+    global main, bocd, plat, oths, users
+
     try:
         mainf = open(MAIN, 'r')
         logger.info("Se ha encontrado el fichero: %s"

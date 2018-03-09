@@ -6,7 +6,7 @@ import logging
 
 ROOT = ''  # ${ROOT_PATH} for production mode
 
-LOG_PATH = ROOT + 'log/mainu.log'
+LOG_PATH = ''
 
 
 def get_handler():
@@ -20,6 +20,8 @@ def get_handler():
 
 
 def setup():
+    global LOG_PATH
+    LOG_PATH = ROOT + 'mainu.log'
     try:
         log = open(LOG_PATH, 'a')
     except FileNotFoundError:

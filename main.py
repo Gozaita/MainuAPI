@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 from flask import Flask, jsonify, redirect, request
 from sqlalchemy import create_engine
-import mainu_logger as mlog
-import last_updates as upd
-import users as usr
-import utils
+import utils.mainu_logger as mlog
+import utils.last_updates as upd
+import utils.users as usr
+import utils.utils as utils
 import logging
 
 ROOT = ''  # ${ROOT_PATH} for production mode
 
-URI = open(ROOT + '.mainudb', 'r').read()
+URI = open(ROOT + 'sens_data/.mainudb', 'r').read()
 
 API_MAIN = "https://www.mainu.eus/api"
 
