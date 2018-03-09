@@ -21,7 +21,7 @@ def get_handler():
 
 def setup():
     global LOG_PATH
-    LOG_PATH = ROOT + 'mainu.log'
+    LOG_PATH = ROOT + 'log/mainu.log'
     try:
         log = open(LOG_PATH, 'a')
     except FileNotFoundError:

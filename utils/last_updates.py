@@ -32,7 +32,7 @@ def get_pw(username):
 
 
 def setup():
-    global PATH, MAIN, BOCD, PLAT, OTHS, USRS
+    global PATH, MAIN, BOCD, PLAT, OTHS, users
     PATH = ROOT + 'last_updates/'
     MAIN = PATH + 'main.json'
     BOCD = PATH + 'bocadillos.json'
@@ -40,7 +40,7 @@ def setup():
     OTHS = PATH + 'otros.json'
     users = json.load(open(ROOT + 'sens_data/.users.json', 'r'))
 
-    global main, bocd, plat, oths, users
+    global main, bocd, plat, oths
 
     try:
         mainf = open(MAIN, 'r')
