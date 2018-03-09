@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from flask import Flask, jsonify, redirect, request
+from flask_httpauth import HTTPBasicAuth
 from sqlalchemy import create_engine
 from time import localtime, strftime
 from logging import FileHandler
@@ -14,6 +15,7 @@ ROOT = ''  # ${ROOT_PATH} for production mode
 
 URI = open(ROOT + '.mainudb', 'r').read()
 CLIENT_ID = open(ROOT + '.client_id', 'r').read()
+USERS_PATH = ROOT + 'users.json'
 LOG_PATH = ROOT + 'log/mainu.log'
 
 UPD_PATH = ROOT + 'last_updates/'
@@ -126,6 +128,7 @@ def updates_write(dict):
 
 db = create_engine(URI)
 app = Flask(__name__)
+auth = HTTPBasicAuth()
 
 handler = log_setup(LOG_PATH)
 app.logger.addHandler(handler)
@@ -133,6 +136,8 @@ app.logger.setLevel(logging.DEBUG)
 
 upd_main, upd_bocd, upd_plat, upd_oths = updates_setup(UPD_MAIN, UPD_BOCD,
                                                        UPD_PLAT, UPD_OTHS)
+
+users = json.load(open(USERS_PATH, 'r'))
 
 #############################################
 # MainU API
@@ -175,6 +180,10 @@ def verify_token(idToken):
 
 
 def add_user(id, nombre, mail, foto, cx=None):
+    """
+    Añade un usuario nuevo a la base de datos. Se le debe pasar el <id> de
+    usuario además del resto de datos.
+    """
     app.logger.info("Añade usuario a la base de datos")
     try:
         if cx is None:
@@ -681,13 +690,24 @@ def get_otro_by_id(id):
         return None
 
 #############################################
+# Seguridad y autenticación
+#############################################
+
+
+@auth.get_password
+def get_pw(username):
+    if username in users:
+        return users.get(username)
+    return None
+
+#############################################
 # Generales
 #############################################
 
 
 @app.route("/last_update/<type>", methods=["GET"])
 @app.route("/last_update/<type>/<id>", methods=["GET"])
-def last_update(type, id=None):
+def get_last_update(type, id=None):
     """
     Devuelve la última fecha en la que se ha actualizado la lista de <type>,
     donde <type> puede ser:
@@ -737,6 +757,54 @@ def last_update(type, id=None):
                                "type: %s, id: %s\n" % (type, id) +
                                "El tipo es inválido")
     return jsonify(res)
+
+
+@app.route("/update/<type>", methods=["GET"])
+@app.route("/update/<type>/<id>", methods=["GET"])
+@auth.login_required
+def modify_last_update(type, id=None):
+    """
+    Actualiza la última fecha de modificación en last_updates. No es necesario
+    que se pase la fecha ni la hora, la función será la responsable de
+    introducirla.
+    """
+    app.logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                    "Actualiza la última fecha de modificación")
+
+    time = strftime("%Y-%m-%d %H:%M:%S", localtime())
+    if id is None:
+        if type == 'bocadillos' or type == 'menu' or type == 'otros':
+            app.logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                            "type: %s" % type)
+            upd_main[type] = time
+            updates_write(upd_main)
+        else:
+            app.logger.warning("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                               "type: %s\n" % type +
+                               "El tipo es inválido")
+            return jsonify(False)
+    else:
+        if type == 'bocadillos':
+            app.logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                            "type: %s, id: %s" % (type, id))
+            upd_bocd[id] = time
+            updates_write(upd_bocd)
+        elif type == 'menu':
+            app.logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                            "type: %s, id: %s" % (type, id))
+            upd_plat[id] = time
+            updates_write(upd_plat)
+        elif type == 'otros':
+            app.logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                            "type: %s, id: %s" % (type, id))
+            upd_oths[id] = time
+            updates_write(upd_oths)
+        else:
+            app.logger.warning("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                               "type: %s, id: %s\n" % (type, id) +
+                               "El tipo es inválido")
+            return jsonify(False)
+    return jsonify(True)
 
 
 @app.route("/", methods=["GET"])

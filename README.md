@@ -29,6 +29,8 @@ pip3 install sqlalchemy
 pip3 install mysqlclient
 pip3 install flask
 pip3 install simplejson
+pip3 install google-auth
+pip3 install Flask-HTTPAuth
 ```
 La instalación de SQLAlchemy puede dar problemas en entornos Windows. Si se da el caso, descargar de la [web oficial](https://www.sqlalchemy.org/download.html), descomprimir e instalar usando `py setup.py install`.
 

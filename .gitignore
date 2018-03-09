@@ -1,6 +1,7 @@
 # Sensitive data
 .mainudb
 .client_id
+users.json
 
 # Logs
 log/
