@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 from flask import Flask, jsonify, redirect, request
 from sqlalchemy import create_engine
-import utils.mainu_logger as mlog
-import utils.last_updates as upd
+import utils.logger as log
+import utils.updates as upd
 import utils.users as usr
-import utils.utils as utils
+import utils.tools as tools
 import logging
 
 ROOT = ''  # ${ROOT_PATH} for production mode
@@ -16,8 +16,8 @@ API_MAIN = "https://www.mainu.eus/api"
 db = create_engine(URI)
 app = Flask(__name__)
 
-mlog.ROOT = ROOT
-mlog.setup()
+log.ROOT = ROOT
+log.setup()
 
 upd.ROOT = ROOT
 upd.setup()
@@ -25,7 +25,7 @@ upd.setup()
 usr.ROOT = ROOT
 usr.setup()
 
-handler = mlog.get_handler()
+handler = log.get_handler()
 app.logger.addHandler(handler)
 app.logger.setLevel(logging.DEBUG)
 
@@ -67,7 +67,7 @@ def get_bocadillos():
         bocs = cx.execute("SELECT * FROM Bocadillo")
         bocs_final = []
         for b in bocs:
-            ings = utils.get_ings(b['id'], cx)
+            ings = tools.get_ings(b['id'], cx)
             boc = {'id': b['id'], 'nombre': b['nombre'], 'precio': b['precio'],
                    'puntuacion': b['puntuacion'], 'ingredientes': ings}
             bocs_final.append(boc)
@@ -90,9 +90,9 @@ def get_bocadillo_by_id(id):
         cx = db.connect()
         b = cx.execute("SELECT * FROM Bocadillo WHERE Bocadillo.id=%d"
                        % id).fetchone()
-        ings = utils.get_ings(id, cx)
-        imgs = utils.get_imgs('bocadillos', id, cx)
-        vals = utils.get_vals('bocadillos', id, cx)
+        ings = tools.get_ings(id, cx)
+        imgs = tools.get_imgs('bocadillos', id, cx)
+        vals = tools.get_vals('bocadillos', id, cx)
         cx.close()
         boc = {'id': b['id'], 'nombre': b['nombre'], 'precio': b['precio'],
                'puntuacion': b['puntuacion'], 'ingredientes': ings,
@@ -122,7 +122,7 @@ def get_menu():
         sg = []
         ps = []
         for p in menu:
-            imgs = utils.get_imgs('menu', p['id'], cx)
+            imgs = tools.get_imgs('menu', p['id'], cx)
             if imgs:
                 imgs = [imgs[0]]
 
@@ -154,8 +154,8 @@ def get_plato_by_id(id):
         p = cx.execute("SELECT * FROM Plato WHERE Plato.id=%d"
                        % id).fetchone()
 
-        imgs = utils.get_imgs('menu', id, cx)
-        vals = utils.get_vals('menu', id, cx)
+        imgs = tools.get_imgs('menu', id, cx)
+        vals = tools.get_vals('menu', id, cx)
         cx.close()
         plt = {'id': p['id'], 'nombre': p['nombre'], 'puntuacion':
                p['puntuacion'], 'descripcion': p['descripcion'],
@@ -183,7 +183,7 @@ def get_otros():
         otros = cx.execute("SELECT * FROM Otro")
         otros_final = []
         for o in otros:
-            imgs = utils.get_imgs('otros', o['id'], cx)
+            imgs = tools.get_imgs('otros', o['id'], cx)
             if imgs:
                 imgs = [imgs[0]]
 
@@ -211,8 +211,8 @@ def get_otro_by_id(id):
         o = cx.execute("SELECT * FROM Otro WHERE Otro.id=%d"
                        % id).fetchone()
 
-        imgs = utils.get_imgs('otros', id, cx)
-        vals = utils.get_vals('otros', id, cx)
+        imgs = tools.get_imgs('otros', id, cx)
+        vals = tools.get_vals('otros', id, cx)
         cx.close()
         otr = {'id': o['id'], 'nombre': o['nombre'], 'puntuacion':
                o['puntuacion'], 'precio': o['precio'], 'images': imgs,

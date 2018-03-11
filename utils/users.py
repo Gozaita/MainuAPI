@@ -12,7 +12,11 @@ logger = logging.getLogger(__name__)
 
 def setup():
     global CLIENT_ID
-    CLIENT_ID = open(ROOT + 'sens_data/.client_id', 'r').read()
+    try:
+        CLIENT_ID = open(ROOT + 'sens_data/.client_id', 'r').read()
+        logger.info("Se ha accedido al CLIENT_ID")
+    except Exception:
+        logger.warning("Ha habido un problema al acceder al CLIENT_ID")
 
 
 def verify_token(idToken):

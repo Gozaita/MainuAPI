@@ -14,6 +14,7 @@ def get_handler():
                           encoding="utf-8")
     handler.setLevel(logging.DEBUG)
     formatter = logging.Formatter('[%(asctime)s]: %(levelname)s - ' +
+                                  '%(module)s - ' +
                                   '%(funcName)s - %(message)s')
     handler.setFormatter(formatter)
     return handler
@@ -37,9 +38,7 @@ def setup():
     log.close()
 
     logging.basicConfig(level=logging.DEBUG,
-                        format='[%(asctime)s]: %(levelname)s - ' +
-                               '%(funcName)s - %(message)s',
-                        filename=LOG_PATH)
+                        handlers=[get_handler()])
 
     log = logging.getLogger('werkzeug')
     log.setLevel(logging.ERROR)
