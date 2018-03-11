@@ -4,5 +4,6 @@ sens_data/
 # Logs
 log/
 
-# Last updates
+# Others
 last_updates/
+deleted_vals/

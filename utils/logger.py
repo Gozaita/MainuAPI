@@ -20,8 +20,9 @@ def get_handler():
     return handler
 
 
-def setup():
-    global LOG_PATH
+def setup(r):
+    global ROOT, LOG_PATH
+    ROOT = r
     LOG_PATH = ROOT + 'log/mainu.log'
     try:
         log = open(LOG_PATH, 'a')

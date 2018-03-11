@@ -10,8 +10,9 @@ CLIENT_ID = ''
 logger = logging.getLogger(__name__)
 
 
-def setup():
-    global CLIENT_ID
+def setup(r):
+    global ROOT, CLIENT_ID
+    ROOT = r
     try:
         CLIENT_ID = open(ROOT + 'sens_data/.client_id', 'r').read()
         logger.info("Se ha accedido al CLIENT_ID")

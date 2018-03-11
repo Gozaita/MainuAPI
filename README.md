@@ -41,10 +41,12 @@ Estructura
 |-- .gitignore
 |-- main.py --> Archivo principal
 |-- utils/
-    |-- logger.py --> Configuración del logger
-    |-- tools.py --> get_imgs, get_vals, get_ings
-    |-- updates.py --> Lectura y escritura de fechas de modificación
-    |-- users.py --> Gestión de usuarios
+    |-- bocadillos.py
+    |-- imagenes.py
+    |-- logger.py
+    |-- updates.py
+    |-- usuarios.py
+    |-- valoraciones.py
 |*-- last_updates/ --> Listas de fechas de modificación de elementos
 |*-- sens_data/ --> Datos de acceso
 |*-- log/ --> Archivo(s) de log
