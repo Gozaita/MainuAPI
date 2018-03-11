@@ -34,6 +34,21 @@ pip3 install Flask-HTTPAuth
 ```
 La instalación de SQLAlchemy puede dar problemas en entornos Windows. Si se da el caso, descargar de la [web oficial](https://www.sqlalchemy.org/download.html), descomprimir e instalar usando `py setup.py install`.
 
+Estructura
+-------------
+```
+|-- README.md
+|-- .gitignore
+|-- main.py
+|-- utils/
+    |-- logger.py --> Configuración del logger
+    |-- tools.py --> get_imgs, get_vals, get_ings
+    |-- updates.py --> Lectura y escritura de fechas de modificación
+    |-- users.py --> Gestión de usuarios
+|-- last_updates/ --> Listas de fechas de modificación de elementos
+|-- sens_data/ --> Datos de acceso
+```
+
 Documentación
 -------------
 
