@@ -39,14 +39,17 @@ Estructura
 ```
 |-- README.md
 |-- .gitignore
-|-- main.py
+|-- main.py --> Archivo principal
 |-- utils/
     |-- logger.py --> Configuración del logger
     |-- tools.py --> get_imgs, get_vals, get_ings
     |-- updates.py --> Lectura y escritura de fechas de modificación
     |-- users.py --> Gestión de usuarios
-|-- last_updates/ --> Listas de fechas de modificación de elementos
-|-- sens_data/ --> Datos de acceso
+|*-- last_updates/ --> Listas de fechas de modificación de elementos
+|*-- sens_data/ --> Datos de acceso
+|*-- log/ --> Archivo(s) de log
+
+* No incluidos en el respositorio
 ```
 
 Documentación
