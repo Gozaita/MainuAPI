@@ -7,7 +7,8 @@ from utils import logger as log
 import logging
 import json
 
-ROOT = ''  # ${ROOT_PATH} for production mode
+ROOT = ''   # ${ROOT_PATH} for production mode
+IMG_ROOT = ''  # ${ROOT_PATH} for production mode
 
 URI = open(ROOT + 'sens_data/.mainudb', 'r').read()
 
@@ -19,6 +20,7 @@ app = Flask(__name__)
 log.setup(ROOT)
 updates.setup(ROOT)
 usuarios.setup(ROOT)
+imagenes.setup(IMG_ROOT)
 valoraciones.setup(ROOT)
 
 handler = log.get_handler()

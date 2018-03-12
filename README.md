@@ -39,7 +39,7 @@ Estructura
 ```
 |-- README.md
 |-- .gitignore
-|-- main.py --> Archivo principal
+|-- main.py
 |-- utils/
     |-- bocadillos.py
     |-- imagenes.py
@@ -47,9 +47,9 @@ Estructura
     |-- updates.py
     |-- usuarios.py
     |-- valoraciones.py
-|*-- last_updates/ --> Listas de fechas de modificación de elementos
-|*-- sens_data/ --> Datos de acceso
-|*-- log/ --> Archivo(s) de log
+|*-- last_updates/
+|*-- sens_data/
+|*-- log/
 
 * No incluidos en el respositorio
 ```
@@ -57,9 +57,9 @@ Estructura
 Documentación
 -------------
 
-La API se encuentra disponible en [api.mainu.eus](https://api.mainu.eus). Puedes acceder a las diferentes funciones a través de dicha URL utilizando HTTPS.
+La API se encuentra disponible en [api.mainu.eus](https://api.mainu.eus). Puedes acceder a las diferentes funciones a través de dicha URL utilizando HTTPS. Existen métodos que requieren autenticación, los cuales están reservados para el mantenimiento del servidor (actualización de fechas de modificación, moderación de valoraciones...).
 
-### Funciones
+### Funciones de acceso público
 
 #### /bocadillos
 **methods=[GET]**
@@ -98,6 +98,52 @@ Devuelve la lista de otros productos (bebidas, raciones...) en formato `JSON`. N
 **methods=[GET] parámetros=[id]**
 
 Devuelve la información asociada a un producto de la categoría *Otros* en formato `JSON`. Se le ha de pasar como parámetro el `id` del producto que se quiere solicitar (en caso de no pasarle este parámetro o de pasarle un `id` inexistente, se devolverá un error). La estructura que se devuelve es la correspondiente a un objeto [`Otro`](#otro).
+
+#### /last_update/\<type\>
+**methods=[GET] parámetros=[type]**
+
+Devuelve la última fecha de modificación de una lista de elementos del tipo `type` que se indique en formato `JSON` en la forma `%Y-%m-%d %H:%M:%S`. Por ejemplo:
+```
+2018-03-01 17:29:46
+```
+
+#### /last_update/\<type\>/\<id\>
+**methods=[GET] parámetros=[type, id]**
+
+Método similar al anterior, pero para un elemento concreto en lugar de la lista, indicado por el `id` que se le debe pasar como parámetro.
+
+### Funciones de acceso restringido
+
+Estas funciones requieren autenticación y se describen a continuación a modo informativo, pero el acceso a las mismas no es público por motivos de seguridad.
+
+#### /update/\<type\>
+**methods=[GET] parámetros=[type]**
+
+Actualiza la última fecha de modificación de una lista de elementos del tipo `type` que se indica como parámetro. No se debe especificar nada más, ya que el método asigna como *timestamp* el momento en el que es llamado.
+
+#### /update/\<type\>/\<id\>
+**methods=[GET] parámetros=[type, id]**
+
+Método similar al anterior, pero para un elemento concreto en lugar de la lista, indicado por el `id` que se le debe pasar como parámetro.
+
+#### /valoraciones/\<type\>
+**methods=[GET] parámetros=[type]**
+
+Devuelve la lista de valoraciones marcadas como no visibles en formato `JSON`, siendo cada objeto del tipo [`Valoración`](#valoración). El objetivo es realizar la moderación de estas valoraciones. Se le debe pasar como parámetro el tipo (`type`) de elemento del que queremos obtener la lista (`bocadillos`, `menu` u `otros`).
+
+#### /update_val/\<type\>/\<id\>
+**methods=[GET] parámetros=[type, id] query=[action]**
+
+Actualiza el estado de una valoración. Se le debe pasar como parámetro el tipo (`type`) del elemento al que pertenece la valoración (`bocadillos`, `menu` u `otros`) y el `id` de la valoración. Además, en el *query string* se le debe indicar la acción (`delete` para eliminarla del sistema o `visible` para hacerla visible). Ejemplos de uso correcto:
+```
+https://api.mainu.eus/update_val/bocadillos/54?action=delete
+https://api.mainu.eus/update_val/menu/7?action=visible
+```
+Ejemplos de uso incorrecto:
+```
+https://api.mainu.eus/update_val/otros/17?visible
+https://api.mainu.eus/update_val/17/otros?actions=visible
+```
 
 ### Objetos
 

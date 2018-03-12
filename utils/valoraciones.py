@@ -12,7 +12,7 @@ def setup(r):
     global ROOT, DEL_VALS
     ROOT = r
     DEL_VALS = ROOT + 'deleted_vals/'
-    logger.info("Se ha establecido el directorio DEL_VALS")
+    logger.info("Se ha establecido el directorio DEL_VALS: %s" % DEL_VALS)
 
 
 def get_vals(type, id, cx):
