@@ -309,7 +309,7 @@ def get_last_update(type, id=None):
     if id is None:
         r = updates.get_last_update(type)
     else:
-        r = updates.get_last_update(type, None)
+        r = updates.get_last_update(type, id)
     return jsonify(r)
 
 
@@ -327,7 +327,7 @@ def modify_last_update(type, id=None):
     if id is None:
         r = updates.modify_last_update(type)
     else:
-        r = updates.modify_last_update(type, None)
+        r = updates.modify_last_update(type, id)
     return jsonify(r)
 
 #############################################
