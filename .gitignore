@@ -1,5 +1,9 @@
 # Sensitive data
-.mainudb
+sens_data/
 
 # Logs
-/log
+log/
+
+# Others
+last_updates/
+deleted_vals/
