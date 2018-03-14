@@ -8,7 +8,7 @@ import logging
 import json
 
 ROOT = ''   # ${ROOT_PATH} for production mode
-IMG_ROOT = ''  # ${ROOT_PATH} for production mode
+IMG_ROOT = ''  # ${IMG_ROOT_PATH} for production mode
 
 URI = open(ROOT + 'sens_data/.mainudb', 'r').read()
 
