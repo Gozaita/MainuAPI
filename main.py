@@ -254,7 +254,8 @@ def get_otros():
                 imgs = [imgs[0]]
 
             otro = {'id': o['id'], 'nombre': o['nombre'], 'precio':
-                    o['precio'], 'puntuacion': o['puntuacion'], 'images': imgs}
+                    o['precio'], 'puntuacion': o['puntuacion'],
+                    'tipo': o['tipo'], 'images': imgs}
             otros_final.append(otro)
         cx.close()
         return jsonify(otros_final)
@@ -282,7 +283,7 @@ def get_otro_by_id(id):
         cx.close()
         otr = {'id': o['id'], 'nombre': o['nombre'], 'puntuacion':
                o['puntuacion'], 'precio': o['precio'], 'images': imgs,
-               'valoraciones': vals}
+               'tipo': o['tipo'], 'valoraciones': vals}
         return jsonify(otr)
     except Exception:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
