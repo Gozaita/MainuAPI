@@ -347,6 +347,26 @@ def api_main():
                 "Redirige a %s" % API_MAIN)
     return redirect(API_MAIN)
 
+##########################################
+# POST valoraciones
+#########################################
+
+
+@app.route('/valoracion', methods=['POST'])
+def add_val():
+    try:
+        cx = db.connect()
+        objJson = request.get_json(silent=True)
+        us_id = objJson['idToken']  # debe sustituirse por idToken
+        tipo = objJson['type']  # bocadillo/menu/otro
+        # (us_id, name, mail, pic) = usuarios.verify_token(idToken)
+        valoraciones.new_val(tipo, objJson, us_id, cx)
+        r = True
+        return jsonify(r)
+    except Exception:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido una excepción")
+        return None
 
 if __name__ == '__main__':
     app.run()
