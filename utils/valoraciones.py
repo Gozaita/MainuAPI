@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from flask import request
 import logging
 
 ROOT = ''  # ${ROOT_PATH} for production mode
@@ -108,4 +109,68 @@ def update_val(type, id, action, cx):
             return True
     except Exception:
         logger.exception("Ha ocurrido una excepción durante la petición")
+        return None
+
+
+def new_val(type, objJson, us_id, cx):
+    """
+    Añade una nueva valoración y llama a la función que actualiza la puntuacion
+    """
+    try:
+        if type == 'bocadillos':
+            vt = 'ValoracionBocadillo'
+            ct = 'Bocadillo_id'
+        elif type == 'menu':
+            vt = 'ValoracionPlato'
+            ct = 'Plato_id'
+        elif type == 'otros':
+            vt = 'ValoracionOtro'
+            ct = 'Otro_id'
+        else:
+            raise Exception
+
+        punt = objJson['puntuacion']
+        txt = objJson['texto']
+        v = objJson['visible']
+        j_id = objJson[ct]
+        cx.execute("INSERT INTO %s (puntuacion, texto, "
+                   "visible, Usuario_id, %s) VALUES "
+                   "(%f, '%s', %d, %d, %d)"
+                   % (vt, ct, float(punt), txt, int(v), int(us_id), int(j_id)))
+        update_punt(ct, vt, cx, j_id)
+        cx.close()
+        return True
+    except Exception:
+        logger.exception("Ha ocurrido una excepción durante la petición")
+        return None
+
+
+def update_punt(ct, vt, cx, j_id):
+    """
+    Crea una lista de todos las puntuaciones y calcula la media para luego
+    actualizarlo en la tabla=vt, id=ct
+    """
+    try:
+        if vt == 'ValoracionBocadillo':
+            tabla = 'Bocadillo'
+        elif vt == 'ValoracionPlato':
+            tabla = 'Plato'
+        elif vt == 'ValoracionOtro':
+            tabla = 'Otro'
+        else:
+            raise Exception
+        vls = cx.execute("SELECT v.puntuacion FROM %s AS v " % vt +
+                         "WHERE %s=%d" % (ct, int(j_id)))
+        if vls is not None:
+            i = 0
+            p = 0
+            while(i < len(vls)):
+                p = p + float(vls[i])
+                i = i + 1
+        punt = p / len(vls)
+        cx.execute("UPDATE %s SET puntuacion=%f WHERE id=%d"
+                   % (tabla, punt, int(j_id)))
+        return True
+    except Exception:
+        logger.exception("Ha ocurrido una excepción")
         return None
