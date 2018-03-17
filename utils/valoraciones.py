@@ -128,7 +128,7 @@ def new_val(type, valoracion, userId, cx):
         else:
             raise Exception
 
-        id = int(valoracion[ct])
+        id = int(valoracion['id'])
         puntuacion = float(valoracion['puntuacion'])
         texto = valoracion.get('texto', None)
 
