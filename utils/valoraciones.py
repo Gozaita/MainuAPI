@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from flask import request
 import logging
 
 ROOT = ''  # ${ROOT_PATH} for production mode
@@ -112,7 +111,7 @@ def update_val(type, id, action, cx):
         return None
 
 
-def new_val(type, objJson, us_id, cx):
+def new_val(type, valoracion, userId, cx):
     """
     Añade una nueva valoración y llama a la función que actualiza la puntuacion
     """
@@ -129,14 +128,15 @@ def new_val(type, objJson, us_id, cx):
         else:
             raise Exception
 
-        punt = objJson['puntuacion']
-        txt = objJson['texto']
-        v = objJson['visible']
-        j_id = objJson[ct]
+        punt = valoracion['puntuacion']
+        txt = valoracion['texto']
+        v = valoracion['visible']
+        j_id = valoracion[ct]
         cx.execute("INSERT INTO %s (puntuacion, texto, "
                    "visible, Usuario_id, %s) VALUES "
                    "(%f, '%s', %d, %d, %d)"
-                   % (vt, ct, float(punt), txt, int(v), int(us_id), int(j_id)))
+                   % (vt, ct, float(punt), txt, int(v), int(userId),
+                      int(j_id)))
         update_punt(ct, vt, cx, j_id)
         cx.close()
         return True

@@ -54,8 +54,43 @@ def get_pw(username):
 # Valoraciones
 #############################################
 
-
-# TODO: add_valoration(idToken, type, id, valoration)
+@app.route('/add_valoracion/<type>', methods=['POST'])
+def add_val(type):
+    """
+    Añade una nueva valoración del tipo <type> (bocadillos, menu, otros). Debe
+    recibir en formato JSON el idToken y el objeto Valoracion (NO se le pasar
+    el id del usuario dentro de este objeto, el usuario queda identificado
+    a través del idToken).
+    """
+    try:
+        cx = db.connect()
+        data = request.get_json(silent=True)
+        idToken = data['idToken']
+        valoracion = data['valoracion']
+        usuario = usuarios.verify_token(idToken)
+        if usuario is not None:
+            u = usuarios.user_exists(usuario['id'], cx)
+            if u is not None:
+                # TODO: Actualizar datos de la BD si son diferentes (foto...)
+                r = valoraciones.new_val(type, valoracion, usuario['id'], cx)
+                return jsonify(r)
+            else:
+                r = usuarios.add_user(usuario['id'], usuario['nombre'],
+                                      usuario['mail'], usuario['foto'])
+                if r is not None:
+                    r = valoraciones.new_val(type, valoracion, usuario['id'],
+                                             cx)
+                    return jsonify(r)
+                else:
+                    logger.warning("No se ha podido añadir el usuario")
+                    raise Exception
+        else:
+            logger.warning("El usuario no ha podido ser verificado")
+            raise Exception
+    except Exception:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido una excepción")
+        return None
 
 
 @app.route("/valoraciones/<type>", methods=["GET"])
@@ -347,26 +382,6 @@ def api_main():
                 "Redirige a %s" % API_MAIN)
     return redirect(API_MAIN)
 
-##########################################
-# POST valoraciones
-#########################################
-
-
-@app.route('/valoracion', methods=['POST'])
-def add_val():
-    try:
-        cx = db.connect()
-        objJson = request.get_json(silent=True)
-        us_id = objJson['idToken']  # debe sustituirse por idToken
-        tipo = objJson['type']  # bocadillo/menu/otro
-        # (us_id, name, mail, pic) = usuarios.verify_token(idToken)
-        valoraciones.new_val(tipo, objJson, us_id, cx)
-        r = True
-        return jsonify(r)
-    except Exception:
-        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
-                         "Ha ocurrido una excepción")
-        return None
 
 if __name__ == '__main__':
     app.run()
