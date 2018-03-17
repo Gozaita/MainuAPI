@@ -128,16 +128,22 @@ def new_val(type, valoracion, userId, cx):
         else:
             raise Exception
 
-        punt = valoracion['puntuacion']
-        txt = valoracion['texto']
-        v = valoracion['visible']
-        j_id = valoracion[ct]
-        cx.execute("INSERT INTO %s (puntuacion, texto, "
-                   "visible, Usuario_id, %s) VALUES "
-                   "(%f, '%s', %d, %d, %d)"
-                   % (vt, ct, float(punt), txt, int(v), int(userId),
-                      int(j_id)))
-        update_punt(ct, vt, cx, j_id)
+        id = int(valoracion[ct])
+        puntuacion = float(valoracion['puntuacion'])
+        texto = valoracion.get('texto', None)
+
+        if texto is not None:
+            cx.execute("INSERT INTO %s " % vt +
+                       "(puntuacion, texto, visible, Usuario_id, %s) " % ct +
+                       "VALUE (%f, \"%s\", False, %s, %d)"
+                       % (puntuacion, texto, userId, id))
+        else:
+            cx.execute("INSERT INTO %s " % vt +
+                       "(puntuacion, visible, Usuario_id, %s) " % ct +
+                       "VALUE (%f, False, %s, %d)"
+                       % (puntuacion, userId, id))
+
+        update_punt(ct, vt, cx, id)
         cx.close()
         return True
     except Exception:
@@ -145,7 +151,7 @@ def new_val(type, valoracion, userId, cx):
         return None
 
 
-def update_punt(ct, vt, cx, j_id):
+def update_punt(ct, vt, cx, id):
     """
     Crea una lista de todos las puntuaciones y calcula la media para luego
     actualizarlo en la tabla=vt, id=ct
@@ -160,7 +166,7 @@ def update_punt(ct, vt, cx, j_id):
         else:
             raise Exception
         vls = cx.execute("SELECT v.puntuacion FROM %s AS v " % vt +
-                         "WHERE %s=%d" % (ct, int(j_id)))
+                         "WHERE %s=%d" % (ct, id))
         if vls is not None:
             i = 0
             p = 0
@@ -169,7 +175,7 @@ def update_punt(ct, vt, cx, j_id):
                 i = i + 1
         punt = p / len(vls)
         cx.execute("UPDATE %s SET puntuacion=%f WHERE id=%d"
-                   % (tabla, punt, int(j_id)))
+                   % (tabla, punt, id))
         return True
     except Exception:
         logger.exception("Ha ocurrido una excepción")
