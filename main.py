@@ -54,7 +54,7 @@ def get_pw(username):
 # Valoraciones
 #############################################
 
-@app.route('/add_valoracion/<type>', methods=['POST'])
+@app.route('/add_valoracion/<type>/<int:id>', methods=['POST'])
 def add_val(type):
     """
     Añade una nueva valoración del tipo <type> (bocadillos, menu, otros). Debe
@@ -72,7 +72,8 @@ def add_val(type):
             u = usuarios.user_exists(usuario['id'], cx)
             if u is not None:
                 # TODO: Actualizar datos de la BD si son diferentes (foto...)
-                r = valoraciones.new_val(type, valoracion, usuario['id'], cx)
+                r = valoraciones.new_val(type, id, valoracion, usuario['id'],
+                                         cx)
                 return jsonify(r)
             else:
                 r = usuarios.add_user(usuario['id'], usuario['nombre'],

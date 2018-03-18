@@ -111,7 +111,7 @@ def update_val(type, id, action, cx):
         return None
 
 
-def new_val(type, valoracion, userId, cx):
+def new_val(type, id, valoracion, userId, cx):
     """
     Añade una nueva valoración y llama a la función que actualiza la puntuacion
     """
@@ -128,7 +128,6 @@ def new_val(type, valoracion, userId, cx):
         else:
             raise Exception
 
-        id = int(valoracion['id'])
         puntuacion = float(valoracion['puntuacion'])
         texto = valoracion.get('texto', None)
 
