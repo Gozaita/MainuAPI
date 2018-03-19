@@ -384,5 +384,13 @@ def api_main():
     return redirect(API_MAIN)
 
 
+@app.route('/test_upload', methods=['POST'])
+def upload_file():
+    logger.info("Image received")
+    logger.info(request.files)
+    logger.info(request.form)
+    return "Files received"
+
+
 if __name__ == '__main__':
     app.run()
