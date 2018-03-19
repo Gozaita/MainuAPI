@@ -155,6 +155,7 @@ def update_punt(ct, vt, cx, id):
     Crea una lista de todos las puntuaciones y calcula la media para luego
     actualizarlo en la tabla=vt, id=ct
     """
+    logger.info("Actualiza la puntuación")
     try:
         if vt == 'ValoracionBocadillo':
             tabla = 'Bocadillo'

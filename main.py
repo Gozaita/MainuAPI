@@ -55,13 +55,15 @@ def get_pw(username):
 #############################################
 
 @app.route('/add_valoracion/<type>/<int:id>', methods=['POST'])
-def add_val(type):
+def add_val(type, id):
     """
     Añade una nueva valoración del tipo <type> (bocadillos, menu, otros). Debe
     recibir en formato JSON el idToken y el objeto Valoracion (NO se le pasar
     el id del usuario dentro de este objeto, el usuario queda identificado
     a través del idToken).
     """
+    logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                "Añade una valoración en: %s, %d" % (type, id))
     try:
         cx = db.connect()
         data = request.get_json(silent=True)
@@ -101,6 +103,8 @@ def get_invisible_vals(type):
     Devuelve todas las valoraciones ocultas para elementos del <type>
     especificado.
     """
+    logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                "Devuelve valoraciones ocultas: %s" % type)
     try:
         cx = db.connect()
         r = valoraciones.get_invisible_vals(type, cx)
@@ -120,6 +124,8 @@ def update_val(type, id):
     que se indique. Se le debe pasar como argumento la acción (action), que
     podrá tomar los valores 'visible' o 'delete'.
     """
+    logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                "Actualiza estado de valoración: %s, %d" % (type, id))
     try:
         action = request.args.get('action', default=None)
         if action is None:
