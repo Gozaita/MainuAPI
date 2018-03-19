@@ -170,7 +170,7 @@ def update_punt(ct, vt, cx, id):
             i = 0
             p = 0
             while(i < len(vls)):
-                p = p + float(vls[i])
+                p = p + float(vls[i]['puntuacion'])
                 i = i + 1
         punt = p / len(vls)
         cx.execute("UPDATE %s SET puntuacion=%f WHERE id=%d"
