@@ -99,6 +99,11 @@ Devuelve la lista de otros productos (bebidas, raciones...) en formato `JSON`. N
 
 Devuelve la información asociada a un producto de la categoría *Otros* en formato `JSON`. Se le ha de pasar como parámetro el `id` del producto que se quiere solicitar (en caso de no pasarle este parámetro o de pasarle un `id` inexistente, se devolverá un error). La estructura que se devuelve es la correspondiente a un objeto [`Otro`](#otro).
 
+#### /ingredientes
+**methods=[GET]**
+
+Devuelve la lista de todos los ingredientes disponibles en formato `JSON`. No necesita ningún parámetro. Cada elemento dentro de estas listas tiene la estructura de un objeto [`Ingrediente`](#ingrediente).
+
 #### /last_update/\<type\>
 **methods=[GET] parámetros=[type]**
 
@@ -111,6 +116,21 @@ Devuelve la última fecha de modificación de una lista de elementos del tipo `t
 **methods=[GET] parámetros=[type, id]**
 
 Método similar al anterior, pero para un elemento concreto en lugar de la lista, indicado por el `id` que se le debe pasar como parámetro.
+
+#### /add_valoracion/\<type\>/\<id\>
+**methods=[POST] parámetros=[type]**
+
+Recibe, en formato `JSON`, una nueva valoración a añadir en un tipo de elemento indicado por `type`, definido por `id`. El formato en el que se envía la valoración varía del tipo de objeto [`Valoración`](#valoración), ya que no se envía el identificador de usuario de forma directa ni existe todavía un `id` de valoración. Por ello, la forma de enviar una valoración que se desee añadir es la siguiente:
+```
+{
+  "valoración": {
+      "puntuacion": 3.5,
+      "texto": "Esta es una valoración de prueba"
+      }
+  "idToken": {...}
+}
+```
+El `idToken` sirve para garantizar la autenticidad del usuario que está realizando la valoración (más información [aquí](https://developers.google.com/android/reference/com/google/android/gms/auth/api/credentials/IdToken)).
 
 ### Funciones de acceso restringido
 

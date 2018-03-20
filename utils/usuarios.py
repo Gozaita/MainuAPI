@@ -45,7 +45,7 @@ def verify_token(idToken):
         pic = idinfo['picture']
 
         logger.info("Token validado")
-        return userid, name, mail, pic
+        return {'id': userid, 'nombre': name, 'mail': mail, 'foto': pic}
     except ValueError:
         logger.exception("La validación del token ha resultado negativa")
         return None

@@ -8,7 +8,7 @@ import logging
 import json
 
 ROOT = ''   # ${ROOT_PATH} for production mode
-IMG_ROOT = ''  # ${ROOT_PATH} for production mode
+IMG_ROOT = ''  # ${IMG_ROOT_PATH} for production mode
 
 URI = open(ROOT + 'sens_data/.mainudb', 'r').read()
 
@@ -54,8 +54,46 @@ def get_pw(username):
 # Valoraciones
 #############################################
 
-
-# TODO: add_valoration(idToken, type, id, valoration)
+@app.route('/add_valoracion/<type>/<int:id>', methods=['POST'])
+def add_val(type, id):
+    """
+    Añade una nueva valoración del tipo <type> (bocadillos, menu, otros). Debe
+    recibir en formato JSON el idToken y el objeto Valoracion (NO se le pasar
+    el id del usuario dentro de este objeto, el usuario queda identificado
+    a través del idToken).
+    """
+    logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                "Añade una valoración en: %s, %d" % (type, id))
+    try:
+        cx = db.connect()
+        data = request.get_json(silent=True)
+        idToken = data['idToken']
+        valoracion = data['valoracion']
+        usuario = usuarios.verify_token(idToken)
+        if usuario is not None:
+            u = usuarios.user_exists(usuario['id'], cx)
+            if u is not None:
+                # TODO: Actualizar datos de la BD si son diferentes (foto...)
+                r = valoraciones.new_val(type, id, valoracion, usuario['id'],
+                                         cx)
+                return jsonify(r)
+            else:
+                r = usuarios.add_user(usuario['id'], usuario['nombre'],
+                                      usuario['mail'], usuario['foto'])
+                if r is not None:
+                    r = valoraciones.new_val(type, valoracion, usuario['id'],
+                                             cx)
+                    return jsonify(r)
+                else:
+                    logger.warning("No se ha podido añadir el usuario")
+                    raise Exception
+        else:
+            logger.warning("El usuario no ha podido ser verificado")
+            raise Exception
+    except Exception:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido una excepción")
+        return None
 
 
 @app.route("/valoraciones/<type>", methods=["GET"])
@@ -65,6 +103,8 @@ def get_invisible_vals(type):
     Devuelve todas las valoraciones ocultas para elementos del <type>
     especificado.
     """
+    logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                "Devuelve valoraciones ocultas: %s" % type)
     try:
         cx = db.connect()
         r = valoraciones.get_invisible_vals(type, cx)
@@ -84,6 +124,8 @@ def update_val(type, id):
     que se indique. Se le debe pasar como argumento la acción (action), que
     podrá tomar los valores 'visible' o 'delete'.
     """
+    logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                "Actualiza estado de valoración: %s, %d" % (type, id))
     try:
         action = request.args.get('action', default=None)
         if action is None:
@@ -254,7 +296,8 @@ def get_otros():
                 imgs = [imgs[0]]
 
             otro = {'id': o['id'], 'nombre': o['nombre'], 'precio':
-                    o['precio'], 'puntuacion': o['puntuacion'], 'images': imgs}
+                    o['precio'], 'puntuacion': o['puntuacion'],
+                    'tipo': o['tipo'], 'images': imgs}
             otros_final.append(otro)
         cx.close()
         return jsonify(otros_final)
@@ -282,7 +325,7 @@ def get_otro_by_id(id):
         cx.close()
         otr = {'id': o['id'], 'nombre': o['nombre'], 'puntuacion':
                o['puntuacion'], 'precio': o['precio'], 'images': imgs,
-               'valoraciones': vals}
+               'tipo': o['tipo'], 'valoraciones': vals}
         return jsonify(otr)
     except Exception:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
@@ -346,26 +389,14 @@ def api_main():
                 "Redirige a %s" % API_MAIN)
     return redirect(API_MAIN)
 
-##########################################
-# POST valoraciones
-#########################################
 
+@app.route('/test_upload', methods=['POST'])
+def upload_file():
+    logger.info("Image received")
+    logger.info(request.files)
+    logger.info(request.form)
+    return "Files received"
 
-@app.route('/valoracion', methods=['POST'])
-def add_val():
-    try:
-        cx = db.connect()
-        objJson = request.get_json(silent=True)
-        us_id = objJson['idToken']  # debe sustituirse por idToken
-        tipo = objJson['type']  # bocadillo/menu/otro
-        # (us_id, name, mail, pic) = usuarios.verify_token(idToken)
-        valoraciones.new_val(tipo, objJson, us_id, cx)
-        r = True
-        return jsonify(r)
-    except Exception:
-        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
-                         "Ha ocurrido una excepción")
-        return None
 
 if __name__ == '__main__':
     app.run()
