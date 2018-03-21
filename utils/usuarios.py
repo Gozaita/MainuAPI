@@ -75,7 +75,7 @@ def user_exists(id, cx):
     """
     logger.info("Comprueba la existencia del usuario: %s" % id)
     try:
-        u = cx.execute("SELECT * FROM Usuario WHERE id=\"%s\"" % id)
+        u = cx.execute("SELECT * FROM Usuario WHERE id=\"%s\"" % id).fetchone()
 
         if u is not None:
             user = {'id': u['id'], 'nombre': u['nombre'], 'foto': u['foto'],

@@ -79,7 +79,7 @@ def add_val(type, id):
                 return jsonify(r)
             else:
                 r = usuarios.add_user(usuario['id'], usuario['nombre'],
-                                      usuario['mail'], usuario['foto'])
+                                      usuario['mail'], usuario['foto'], cx)
                 if r is not None:
                     r = valoraciones.new_val(type, valoracion, usuario['id'],
                                              cx)
@@ -388,14 +388,6 @@ def api_main():
     logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                 "Redirige a %s" % API_MAIN)
     return redirect(API_MAIN)
-
-
-@app.route('/test_upload', methods=['POST'])
-def upload_file():
-    logger.info("Image received")
-    logger.info(request.files)
-    logger.info(request.form)
-    return "Files received"
 
 
 if __name__ == '__main__':
