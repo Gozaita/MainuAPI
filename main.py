@@ -81,8 +81,8 @@ def add_val(type, id):
                 r = usuarios.add_user(usuario['id'], usuario['nombre'],
                                       usuario['mail'], usuario['foto'], cx)
                 if r is not None:
-                    r = valoraciones.new_val(type, valoracion, usuario['id'],
-                                             cx)
+                    r = valoraciones.new_val(type, id, valoracion,
+                                             usuario['id'], cx)
                     return jsonify(r)
                 else:
                     logger.warning("No se ha podido añadir el usuario")

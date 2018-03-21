@@ -14,7 +14,7 @@ def setup(r):
     global ROOT, CLIENT_ID
     ROOT = r
     try:
-        CLIENT_ID = open(ROOT + 'sens_data/.client_id', 'r').read()
+        CLIENT_ID = open(ROOT + 'sens_data/.client_id', 'r').read()[:-1]
         logger.info("Se ha accedido al CLIENT_ID")
     except Exception:
         logger.warning("Ha habido un problema al acceder al CLIENT_ID")

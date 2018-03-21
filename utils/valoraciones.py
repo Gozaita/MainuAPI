@@ -166,7 +166,7 @@ def update_punt(ct, vt, cx, id):
         else:
             raise Exception
         vls = cx.execute("SELECT v.puntuacion FROM %s AS v " % vt +
-                         "WHERE %s=%d" % (ct, id))
+                         "WHERE %s=%d" % (ct, id)).fetchall()
         if vls is not None:
             i = 0
             p = 0
