@@ -20,6 +20,7 @@ def get_vals(type, id, cx):
     Devuelve todas las valoraciones asociadas a un elemento con un <id> del
     tipo <type> que se especifique. Solo devuelve aquellas visibles.
     """
+    logger.debug("Devuelve las valoraciones asociadas: %s, %d" % (type, id))
     try:
         if type == 'bocadillos':
             vt = 'ValoracionBocadillo'
@@ -94,6 +95,7 @@ def update_val(type, id, action, cx):
 
         if action == 'visible':
             cx.execute("UPDATE %s SET visible=True WHERE id=%d" % (vt, id))
+            logger.debug("La valoración se ha hecho visible")
             return True
         elif action == 'delete':
             val = cx.execute("SELECT * FROM %s WHERE id=%d"
@@ -105,6 +107,7 @@ def update_val(type, id, action, cx):
             v.write("##############################################\n")
             v.close()
             cx.execute("DELETE FROM %s WHERE id=%d" % (vt, id))
+            logger.debug("La valoración se ha borrado")
             return True
     except Exception:
         logger.exception("Ha ocurrido una excepción durante la petición")
@@ -115,6 +118,7 @@ def new_val(type, id, valoracion, userId, cx):
     """
     Añade una nueva valoración y llama a la función que actualiza la puntuacion
     """
+    logger.debug("Añade una nueva valoración")
     try:
         if type == 'bocadillos':
             vt = 'ValoracionBocadillo'
@@ -144,6 +148,7 @@ def new_val(type, id, valoracion, userId, cx):
 
         update_punt(ct, vt, cx, id)
         cx.close()
+        logger.debug("La valoración se ha añadido")
         return True
     except Exception:
         logger.exception("Ha ocurrido una excepción durante la petición")
@@ -155,7 +160,7 @@ def update_punt(ct, vt, cx, id):
     Crea una lista de todos las puntuaciones y calcula la media para luego
     actualizarlo en la tabla=vt, id=ct
     """
-    logger.info("Actualiza la puntuación")
+    logger.debug("Actualiza la puntuación")
     try:
         if vt == 'ValoracionBocadillo':
             tabla = 'Bocadillo'
@@ -176,6 +181,8 @@ def update_punt(ct, vt, cx, id):
         punt = p / len(vls)
         cx.execute("UPDATE %s SET puntuacion=%f WHERE id=%d"
                    % (tabla, punt, id))
+        logger.debug("Puntuación actualizada para (%s, %d): %f" % (tabla, id,
+                                                                   punt))
         return True
     except Exception:
         logger.exception("Ha ocurrido una excepción")

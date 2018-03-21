@@ -61,6 +61,7 @@ def add_user(id, nombre, mail, foto, cx):
         cx.execute("INSERT INTO Usuario (id, nombre, mail, foto) VALUES " +
                    "(\"%s\", \"%s\", \"%s\", \"%s\")" % (id, nombre,
                                                          mail, foto))
+        logger.debug("El usuario se ha añadido correctamente")
         return True
     except Exception:
         logger.exception("Ha ocurrido un error al añadir el usuario")
@@ -80,8 +81,10 @@ def user_exists(id, cx):
         if u is not None:
             user = {'id': u['id'], 'nombre': u['nombre'], 'foto': u['foto'],
                     'verificado': u['verificado']}
+            logger.debug("El usuario existe")
             return user
         else:
+            logger.debug("El usuario no existe")
             return None
     except Exception:
         logger.exception("Ha ocurrido un error al comprobar el usuario")

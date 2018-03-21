@@ -88,21 +88,20 @@ def get_last_update(type, id=None):
     res = ''
     if id is None:
         if type == 'bocadillos' or type == 'menu' or type == 'otros':
-            logger.info("type: %s" % type)
-            logger.info("El tamaño de main es %d" % len(main))
+            logger.debug("type: %s" % type)
             res = main[type]
         else:
             logger.warning("type: %s\n" % type +
                            "El tipo es inválido")
     else:
         if type == 'bocadillos':
-            logger.info("type: %s, id: %s" % (type, id))
+            logger.debug("type: %s, id: %s" % (type, id))
             res = bocd[id]
         elif type == 'menu':
-            logger.info("type: %s, id: %s" % (type, id))
+            logger.debug("type: %s, id: %s" % (type, id))
             res = plat[id]
         elif type == 'otros':
-            logger.info("type: %s, id: %s" % (type, id))
+            logger.debug("type: %s, id: %s" % (type, id))
             res = oths[id]
         else:
             logger.warning("type: %s, id: %s\n" % (type, id) +
@@ -114,7 +113,7 @@ def modify_last_update(type, id=None):
     time = strftime("%Y-%m-%d %H:%M:%S", localtime())
     if id is None:
         if type == 'bocadillos' or type == 'menu' or type == 'otros':
-            logger.info("type: %s" % type)
+            logger.debug("type: %s" % type)
             main[type] = time
             write(main)
         else:
@@ -123,15 +122,15 @@ def modify_last_update(type, id=None):
             return False
     else:
         if type == 'bocadillos':
-            logger.info("type: %s, id: %s" % (type, id))
+            logger.debug("type: %s, id: %s" % (type, id))
             bocd[id] = time
             write(bocd)
         elif type == 'menu':
-            logger.info("type: %s, id: %s" % (type, id))
+            logger.debug("type: %s, id: %s" % (type, id))
             plat[id] = time
             write(plat)
         elif type == 'otros':
-            logger.info("type: %s, id: %s" % (type, id))
+            logger.debug("type: %s, id: %s" % (type, id))
             oths[id] = time
             write(oths)
         else:

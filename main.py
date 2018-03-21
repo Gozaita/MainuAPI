@@ -349,8 +349,8 @@ def get_last_update(type, id=None):
     Si se pasa además el parámetro <id> se devolverá información del
     bocadillo, plato del menú u otro (p. ej.: /last_update/menu/5).
     """
-    logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
-                "Devuelve última fecha de modificación")
+    logger.debug("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                 "Devuelve última fecha de modificación")
     if id is None:
         r = updates.get_last_update(type)
     else:
@@ -367,8 +367,8 @@ def modify_last_update(type, id=None):
     que se pase la fecha ni la hora, la función será la responsable de
     introducirla.
     """
-    logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
-                "Actualiza la última fecha de modificación")
+    logger.debug("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                 "Actualiza la última fecha de modificación")
     if id is None:
         r = updates.modify_last_update(type)
     else:
