@@ -1,18 +1,10 @@
 # -*- coding: utf-8 -*-
+from utils import config
 import logging
 
-ROOT = ''  # ${ROOT_PATH} for production mode
-
-DEL_VALS = ''
+TRASH = config.get('PATH', 'root') + config.get('PATH', 'trash')
 
 logger = logging.getLogger(__name__)
-
-
-def setup(r):
-    global ROOT, DEL_VALS
-    ROOT = r
-    DEL_VALS = ROOT + 'deleted_vals/'
-    logger.info("Se ha establecido el directorio DEL_VALS: %s" % DEL_VALS)
 
 
 def get_vals(type, id, cx):
@@ -100,7 +92,7 @@ def update_val(type, id, action, cx):
         elif action == 'delete':
             val = cx.execute("SELECT * FROM %s WHERE id=%d"
                              % (vt, id)).fetchone()
-            v = open(DEL_VALS + type + '_' + str(id), 'w')
+            v = open(TRASH + type + '_' + str(id), 'w')
             v.write("##############################################\n")
             v.write("%s, %d\n" % (type, id))
             v.write("%s\n" % val)

@@ -1,23 +1,12 @@
 # -*- coding: utf-8 -*-
 from google.oauth2 import id_token
 from google.auth.transport import requests
+from utils import config
 import logging
 
-ROOT = ''  # ${ROOT_PATH} for production mode
-
-CLIENT_ID = ''
+CLIENT_ID = config.get('KEY', 'client_id')
 
 logger = logging.getLogger(__name__)
-
-
-def setup(r):
-    global ROOT, CLIENT_ID
-    ROOT = r
-    try:
-        CLIENT_ID = open(ROOT + 'sens_data/.client_id', 'r').read()[:-1]
-        logger.info("Se ha accedido al CLIENT_ID")
-    except Exception:
-        logger.warning("Ha habido un problema al acceder al CLIENT_ID")
 
 
 def verify_token(idToken):

@@ -1,31 +1,19 @@
 # -*- coding: utf-8 -*-
+from utils import config
 import logging
 
-ROOT = ''  # ${ROOT_PATH} for production mode
+SRV_PATH = config.get('IMAGES', 'server')
+IMG_PATH = SRV_PATH + config.get('IMAGES', 'images')
+BOC_PATH = IMG_PATH + config.get('IMAGES', 'bocadillos')
+PLT_PATH = IMG_PATH + config.get('IMAGES', 'platos')
+OTH_PATH = IMG_PATH + config.get('IMAGES', 'otros')
 
-SRV_PATH = 'https://server.mainu.eus/'
-IMG_PATH = SRV_PATH + 'external/images/'
-BOC_PATH = IMG_PATH + 'bocadillos/'
-PLT_PATH = IMG_PATH + 'platos/'
-OTH_PATH = IMG_PATH + 'otros/'
-
-IMGW_PATH = ROOT + 'external/images/'
-BOCW_PATH = IMGW_PATH + 'bocadillos/'
-PLTW_PATH = IMGW_PATH + 'platos/'
-OTHW_PATH = IMGW_PATH + 'otros/'
+IMGW_PATH = config.get('IMAGES', 'path') + config.get('IMAGES', 'images')
+BOCW_PATH = IMGW_PATH + config.get('IMAGES', 'bocadillos')
+PLTW_PATH = IMGW_PATH + config.get('IMAGES', 'platos')
+OTHW_PATH = IMGW_PATH + config.get('IMAGES', 'otros')
 
 logger = logging.getLogger(__name__)
-
-
-def setup(r):
-    global ROOT, IMGW_PATH, BOCW_PATH, PLTW_PATH, OTHW_PATH
-    ROOT = r
-    IMGW_PATH = ROOT + 'external/images/'
-    BOCW_PATH = IMGW_PATH + 'bocadillos/'
-    PLTW_PATH = IMGW_PATH + 'platos/'
-    OTHW_PATH = IMGW_PATH + 'otros/'
-    logger.info("Se ha establecido el directorio escritura de imágenes " +
-                "IMGW_PATH: %s" % IMGW_PATH)
 
 
 def get_imgs(type, id, cx):

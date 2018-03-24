@@ -2,41 +2,31 @@
 from flask import Flask, jsonify, redirect, request
 from flask_httpauth import HTTPBasicAuth
 from sqlalchemy import create_engine
-from utils import updates, usuarios, bocadillos, imagenes, valoraciones
+from utils import updates, usuarios, bocadillos, imagenes, valoraciones, config
 from utils import logger as log
 import logging
-import json
-
-ROOT = ''   # ${ROOT_PATH} for production mode
-IMG_ROOT = ''  # ${IMG_ROOT_PATH} for production mode
-
-URI = open(ROOT + 'sens_data/.mainudb', 'r').read()
-
-API_MAIN = "https://www.mainu.eus/api"
-
-db = create_engine(URI)
-app = Flask(__name__)
-
-log.setup(ROOT)
-updates.setup(ROOT)
-usuarios.setup(ROOT)
-imagenes.setup(IMG_ROOT)
-valoraciones.setup(ROOT)
-
-handler = log.get_handler()
-app.logger.addHandler(handler)
-app.logger.setLevel(logging.DEBUG)
 
 logger = logging.getLogger(__name__)
 
+handler = log.get_handler()
+app = Flask(__name__)
 auth = HTTPBasicAuth()
-users = json.load(open(ROOT + 'sens_data/.users.json', 'r'))
+app.logger.addHandler(handler)
+app.logger.setLevel(logging.DEBUG)
+
+updates.init()
+
+user, pswd, host, schm = config.get_database()
+HTTP_USERS = config.get_httpauth()
+API_MAIN = config.get('PATH', 'api')
+
+db = create_engine('mysql://%s:%s@%s/%s' % (user, pswd, host, schm))
 
 
 @auth.get_password
 def get_pw(username):
-    if username in users:
-        return users.get(username)
+    if username in HTTP_USERS:
+        return HTTP_USERS.get(username)
     return None
 
 #############################################

@@ -1,35 +1,19 @@
 from time import localtime, strftime
+from utils import config
 import logging
 import json
 import sys
 
-ROOT = ''  # ${ROOT_PATH} for production mode
-
-PATH = ''
-MAIN = ''
-BOCD = ''
-PLAT = ''
-OTHS = ''
-
 logger = logging.getLogger(__name__)
 
-main = {}
-bocd = {}
-plat = {}
-oths = {}
+PATH = config.get('PATH', 'root') + config.get('LAST_UPDATES', 'path')
+MAIN = PATH + config.get('LAST_UPDATES', 'main')
+BOCD = PATH + config.get('LAST_UPDATES', 'bocadillos')
+PLAT = PATH + config.get('LAST_UPDATES', 'platos')
+OTHS = PATH + config.get('LAST_UPDATES', 'otros')
 
 
-def setup(r):
-    global ROOT, PATH, MAIN, BOCD, PLAT, OTHS
-    ROOT = r
-    PATH = ROOT + 'last_updates/'
-    MAIN = PATH + 'main.json'
-    BOCD = PATH + 'bocadillos.json'
-    PLAT = PATH + 'platos.json'
-    OTHS = PATH + 'otros.json'
-
-    global main, bocd, plat, oths
-
+def init():
     try:
         mainf = open(MAIN, 'r')
         logger.info("Se ha encontrado el fichero: %s"
@@ -47,6 +31,8 @@ def setup(r):
         logger.error("No se ha podido acceder a uno o varios de los " +
                      "directorios de actualización")
         sys.exit(1)
+
+    global main, bocd, plat, oths
 
     main = json.load(mainf)
     mainf.close()
