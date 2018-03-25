@@ -106,6 +106,38 @@ def update_val(type, id, action, cx):
         return None
 
 
+def get_val(type, id, userId, cx):
+    """
+    Devuelve la valoración de un usuario, si existe, para un elemento con el
+    <id> dado y del <type> indicado.
+    """
+    try:
+        if type == 'bocadillos':
+            vt = 'ValoracionBocadillo'
+            ct = 'Bocadillo_id'
+        elif type == 'menu':
+            vt = 'ValoracionPlato'
+            ct = 'Plato_id'
+        elif type == 'otros':
+            vt = 'ValoracionOtro'
+            ct = 'Otro_id'
+        else:
+            raise Exception
+
+        v = cx.execute('SELECT id, puntuacion, texto FROM %s WHERE ' % vt +
+                       'WHERE %s=%d ' % (ct, id) +
+                       'AND Usuario_id=\"%s\"' % userId).fetchone()
+        if v is None:
+            return None
+        else:
+            val = {'id': v['id'], 'puntuacion': v['puntuacion'],
+                   'texto': v['texto']}
+            return val
+    except Exception:
+        logger.exception("Ha ocurrido una excepción durante la petición")
+        return None
+
+
 def new_val(type, id, valoracion, userId, cx):
     """
     Añade una nueva valoración y llama a la función que actualiza la puntuacion
