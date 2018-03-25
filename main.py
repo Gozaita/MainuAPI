@@ -91,6 +91,36 @@ def add_val(type, id):
         return None
 
 
+@app.route("/valoracion/<type>/<int:id>", methods=["POST"])
+def get_val(type, id):
+    """
+    Devuelve la valoración de un usuario para el elemento dado, en caso
+    de que exista. Si no existe, devuelve False.
+    """
+    logger.debug("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                 "Solicita valoración de usuario: %s, %d" % (type, id))
+    try:
+        cx = db.connect()
+        data = request.get_json(silent=True)
+        idToken = data['idToken']
+        usuario = usuarios.verify_token(idToken)
+        if usuario is not None:
+            v = valoraciones.get_val(type, id, usuario['id'], cx)
+            if v is None:
+                logger.debug("No existe valoración de usuario")
+                return jsonify(False)
+            else:
+                logger.debug("El usuario ya ha valorado este producto")
+                return jsonify(v)
+        else:
+            logger.warning("El usuario no ha podido ser verificado")
+            raise Exception
+    except Exception:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido una excepción")
+        return None
+
+
 @app.route("/valoraciones/<type>", methods=["GET"])
 @auth.login_required
 def get_invisible_vals(type):
