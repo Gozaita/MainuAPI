@@ -66,8 +66,8 @@ def add_val(type, id):
                 # TODO: Actualizar datos de la BD si son diferentes (foto...)
                 val = valoraciones.get_val(type, id, usuario['id'], cx)
                 if val is not None:
-                    logger.warning("Ya existe una valoración del usuario para
-                                   "este elemento.")
+                    logger.warning("Ya existe una valoración del usuario " +
+                                   "para este elemento.")
                     raise Exception
                 r = valoraciones.new_val(type, id, valoracion, usuario['id'],
                                          cx)
