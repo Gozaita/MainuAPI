@@ -24,7 +24,8 @@ def get_vals(type, id, cx):
             vt = 'ValoracionOtro'
             cl = 'Otro_id'
         else:
-            raise Exception
+            logger.error("El tipo que se ha pasado no es válido")
+            return False
 
         vls = cx.execute("SELECT v.id, v.puntuacion, v.texto, v.Usuario_id, " +
                          "u.nombre, u.foto, u.verificado FROM %s AS v " % vt +
@@ -54,7 +55,8 @@ def get_invisible_vals(type, cx):
         elif type == 'otros':
             vt = 'ValoracionOtro'
         else:
-            raise Exception
+            logger.error("El tipo que se ha pasado no es válido")
+            return False
 
         vls = cx.execute("SELECT v.id, v.puntuacion, v.texto, v.Usuario_id, " +
                          "u.nombre, u.foto, u.verificado FROM %s AS v " % vt +
@@ -83,7 +85,8 @@ def update_val(type, id, action, cx):
         elif type == 'otros':
             vt = 'ValoracionOtro'
         else:
-            raise Exception
+            logger.error("El tipo que se ha pasado no es válido")
+            return False
 
         if action == 'visible':
             cx.execute("UPDATE %s SET visible=True WHERE id=%d" % (vt, id))
@@ -101,6 +104,8 @@ def update_val(type, id, action, cx):
             cx.execute("DELETE FROM %s WHERE id=%d" % (vt, id))
             logger.debug("La valoración se ha borrado")
             return True
+        else:
+            return False
     except Exception:
         logger.exception("Ha ocurrido una excepción durante la petición")
         return None

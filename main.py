@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-from flask import Flask, jsonify, redirect, request
+from flask import Flask, jsonify, redirect, request, render_template
 from flask_httpauth import HTTPBasicAuth
 from sqlalchemy import create_engine
+from sqlalchemy.exc import OperationalError
 from utils import updates, usuarios, bocadillos, imagenes, valoraciones, config
 from utils import logger as log
 import logging
@@ -28,6 +29,26 @@ def get_pw(username):
     if username in HTTP_USERS:
         return HTTP_USERS.get(username)
     return None
+
+
+@app.errorhandler(400)
+def bad_request(e):
+    return render_template('400.html'), 400
+
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+
+@app.errorhandler(405)
+def bad_method(e):
+    return render_template('405.html'), 405
+
+
+@app.errorhandler(500)
+def server_error(e):
+    return render_template('500.html'), 500
 
 #############################################
 # MainU API
@@ -85,10 +106,14 @@ def add_val(type, id):
         else:
             logger.warning("El usuario no ha podido ser verificado")
             raise Exception
+    except OperationalError:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido un error con la base de datos")
+        return render_template('500.html', errcode='SQL'), 500
     except Exception:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
-                         "Ha ocurrido una excepción")
-        return None
+                         "Ha ocurrido una excepción durante la petición")
+        return render_template('500.html'), 500
 
 
 @app.route("/valoracion/<type>/<int:id>", methods=["POST"])
@@ -115,10 +140,14 @@ def get_val(type, id):
         else:
             logger.warning("El usuario no ha podido ser verificado")
             raise Exception
+    except OperationalError:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido un error con la base de datos")
+        return render_template('500.html', errcode='SQL'), 500
     except Exception:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
-                         "Ha ocurrido una excepción")
-        return None
+                         "Ha ocurrido una excepción durante la petición")
+        return render_template('500.html'), 500
 
 
 @app.route("/valoraciones/<type>", methods=["GET"])
@@ -134,11 +163,19 @@ def get_invisible_vals(type):
         cx = db.connect()
         r = valoraciones.get_invisible_vals(type, cx)
         cx.close
+        if r is None:
+            return render_template('500.html', errcode='VAL.GET_INV_VALS'), 500
+        elif r is False:
+            return render_template('400.html', expl=config.BAD_TYPE), 400
         return jsonify(r)
+    except OperationalError:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido un error con la base de datos")
+        return render_template('500.html', errcode='SQL'), 500
     except Exception:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                          "Ha ocurrido una excepción durante la petición")
-        return None
+        return render_template('500.html'), 500
 
 
 @app.route("/update_val/<type>/<int:id>", methods=["GET"])
@@ -154,17 +191,27 @@ def update_val(type, id):
     try:
         action = request.args.get('action', default=None)
         if action is None:
-            raise Exception
+            logger.warning("No se ha pasado una acción como parámetro")
+            return render_template('400.html', expl=config.BAD_ACTION), 400
         elif action != 'visible' and action != 'delete':
-            raise Exception
+            logger.warning("La acción que se ha pasado no es válida")
+            return render_template('400.html', expl=config.BAD_ACTION), 400
         cx = db.connect()
         r = valoraciones.update_val(type, id, action, cx)
+        if r is None:
+            return render_template('500.html', errcode='VAL.UPDATE_VAL'), 500
+        elif r is False:
+            return render_template('400.html', expl=config.BAD_TYPE), 400
         cx.close
         return jsonify(r)
+    except OperationalError:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido un error con la base de datos")
+        return render_template('500.html', errcode='SQL'), 500
     except Exception:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                          "Ha ocurrido una excepción durante la petición")
-        return None
+        return render_template('500.html'), 500
 
 #############################################
 # Bocadillos
@@ -182,10 +229,14 @@ def get_ingredientes():
         cx = db.connect()
         ings = bocadillos.get_ings_all(cx)
         return jsonify(ings)
+    except OperationalError:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido un error con la base de datos")
+        return render_template('500.html', errcode='SQL'), 500
     except Exception:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                          "Ha ocurrido una excepción durante la petición")
-        return None
+        return render_template('500.html'), 500
 
 
 @app.route("/bocadillos", methods=["GET"])
@@ -206,10 +257,14 @@ def get_bocadillos():
             bocs_final.append(boc)
         cx.close()
         return jsonify(bocs_final)
+    except OperationalError:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido un error con la base de datos")
+        return render_template('500.html', errcode='SQL'), 500
     except Exception:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                          "Ha ocurrido una excepción durante la petición")
-        return None
+        return render_template('500.html'), 500
 
 
 @app.route("/bocadillos/<int:id>", methods=["GET"])
@@ -227,14 +282,21 @@ def get_bocadillo_by_id(id):
         imgs = imagenes.get_imgs('bocadillos', id, cx)
         vals = valoraciones.get_vals('bocadillos', id, cx)
         cx.close()
-        boc = {'id': b['id'], 'nombre': b['nombre'], 'precio': b['precio'],
-               'puntuacion': b['puntuacion'], 'ingredientes': ings,
-               'images': imgs, 'valoraciones': vals}
-        return jsonify(boc)
+        if b is None:
+            return render_template('400.html', expl=config.BAD_ID), 400
+        else:
+            boc = {'id': b['id'], 'nombre': b['nombre'], 'precio': b['precio'],
+                   'puntuacion': b['puntuacion'], 'ingredientes': ings,
+                   'images': imgs, 'valoraciones': vals}
+            return jsonify(boc)
+    except OperationalError:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido un error con la base de datos")
+        return render_template('500.html', errcode='SQL'), 500
     except Exception:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                          "Ha ocurrido una excepción durante la petición")
-        return None
+        return render_template('500.html'), 500
 
 #############################################
 # Platos
@@ -269,10 +331,14 @@ def get_menu():
                 ps.append(pl)
         cx.close()
         return jsonify({'primeros': pr, 'segundos': sg, 'postre': ps})
+    except OperationalError:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido un error con la base de datos")
+        return render_template('500.html', errcode='SQL'), 500
     except Exception:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                          "Ha ocurrido una excepción durante la petición")
-        return None
+        return render_template('500.html'), 500
 
 
 @app.route("/menu/<int:id>", methods=["GET"])
@@ -290,14 +356,21 @@ def get_plato_by_id(id):
         imgs = imagenes.get_imgs('menu', id, cx)
         vals = valoraciones.get_vals('menu', id, cx)
         cx.close()
-        plt = {'id': p['id'], 'nombre': p['nombre'], 'puntuacion':
-               p['puntuacion'], 'descripcion': p['descripcion'],
-               'tipo': p['tipo'], 'images': imgs, 'valoraciones': vals}
-        return jsonify(plt)
+        if p is None:
+            return render_template('400.html', expl=config.BAD_ID), 400
+        else:
+            plt = {'id': p['id'], 'nombre': p['nombre'], 'puntuacion':
+                   p['puntuacion'], 'descripcion': p['descripcion'],
+                   'tipo': p['tipo'], 'images': imgs, 'valoraciones': vals}
+            return jsonify(plt)
+    except OperationalError:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido un error con la base de datos")
+        return render_template('500.html', errcode='SQL'), 500
     except Exception:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                          "Ha ocurrido una excepción durante la petición")
-        return None
+        return render_template('500.html'), 500
 
 #############################################
 # Otros
@@ -326,10 +399,14 @@ def get_otros():
             otros_final.append(otro)
         cx.close()
         return jsonify(otros_final)
+    except OperationalError:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido un error con la base de datos")
+        return render_template('500.html', errcode='SQL'), 500
     except Exception:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                          "Ha ocurrido una excepción durante la petición")
-        return None
+        return render_template('500.html'), 500
 
 
 @app.route("/otros/<int:id>", methods=["GET"])
@@ -348,14 +425,21 @@ def get_otro_by_id(id):
         imgs = imagenes.get_imgs('otros', id, cx)
         vals = valoraciones.get_vals('otros', id, cx)
         cx.close()
-        otr = {'id': o['id'], 'nombre': o['nombre'], 'puntuacion':
-               o['puntuacion'], 'precio': o['precio'], 'images': imgs,
-               'tipo': o['tipo'], 'valoraciones': vals}
-        return jsonify(otr)
+        if o is None:
+            return render_template('400.html', expl=config.BAD_ID), 400
+        else:
+            otr = {'id': o['id'], 'nombre': o['nombre'], 'puntuacion':
+                   o['puntuacion'], 'precio': o['precio'], 'images': imgs,
+                   'tipo': o['tipo'], 'valoraciones': vals}
+            return jsonify(otr)
+    except OperationalError:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido un error con la base de datos")
+        return render_template('500.html', errcode='SQL'), 500
     except Exception:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                          "Ha ocurrido una excepción durante la petición")
-        return None
+        return render_template('500.html'), 500
 
 #############################################
 # Last updates
@@ -376,10 +460,11 @@ def get_last_update(type, id=None):
     """
     logger.debug("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                  "Devuelve última fecha de modificación")
-    if id is None:
-        r = updates.get_last_update(type)
-    else:
-        r = updates.get_last_update(type, id)
+
+    r = updates.get_last_update(type, id)
+
+    if not r:
+        return render_template("400.html", expl=config.BAD_TYPE_ID), 400
     return jsonify(r)
 
 
@@ -394,10 +479,11 @@ def modify_last_update(type, id=None):
     """
     logger.debug("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                  "Actualiza la última fecha de modificación")
-    if id is None:
-        r = updates.modify_last_update(type)
-    else:
-        r = updates.modify_last_update(type, id)
+
+    r = updates.modify_last_update(type, id)
+
+    if r is False:
+        return render_template("400.html", expl=config.BAD_TYPE), 400
     return jsonify(r)
 
 #############################################
