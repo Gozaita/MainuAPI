@@ -47,10 +47,16 @@ Estructura
     |-- updates.py
     |-- usuarios.py
     |-- valoraciones.py
+    |-- config.py
+    |*-- .config
+|-- templates/
+    |-- 400.html
+    |-- 404.html
+    |-- 405.html
+    |-- 500.html
 |*-- last_updates/
-|*-- sens_data/
 |*-- log/
-
+|*-- .trash/
 * No incluidos en el respositorio
 ```
 
@@ -118,7 +124,7 @@ Devuelve la última fecha de modificación de una lista de elementos del tipo `t
 Método similar al anterior, pero para un elemento concreto en lugar de la lista, indicado por el `id` que se le debe pasar como parámetro.
 
 #### /add_valoracion/\<type\>/\<id\>
-**methods=[POST] parámetros=[type]**
+**methods=[POST] parámetros=[type, id]**
 
 Recibe, en formato `JSON`, una nueva valoración a añadir en un tipo de elemento indicado por `type`, definido por `id`. El formato en el que se envía la valoración varía del tipo de objeto [`Valoración`](#valoración), ya que no se envía el identificador de usuario de forma directa ni existe todavía un `id` de valoración. Por ello, la forma de enviar una valoración que se desee añadir es la siguiente:
 ```
@@ -131,6 +137,24 @@ Recibe, en formato `JSON`, una nueva valoración a añadir en un tipo de element
 }
 ```
 El `idToken` sirve para garantizar la autenticidad del usuario que está realizando la valoración (más información [aquí](https://developers.google.com/android/reference/com/google/android/gms/auth/api/credentials/IdToken)).
+
+#### /valoracion/\<type\>/\<id\>
+**methods=[POST] parámetros=[type, id]**
+
+Devuelve, si existe y en formato `JSON`, una valoración de un tipo de elemento indicado por `type`, definido por `id`, realizada por un usuario concreto. El formato en el que se envía la valoración varía del tipo de objeto [`Valoración`](#valoración), ya que no se envía el identificador de usuario. Por ello, la valoración recibida tiene la siguiente forma:
+```
+{
+  "id": 1,
+  "puntuacion": 4,
+  "texto": "Delicioso bocadillo, aunque echo en falta alguna salsa que lo acompañe."
+}
+```
+Si no se encuentra ninguna valoración para este elemento y usuario, en lugar de lo anterior se devolverá `False`. El cliente deberá enviar, en formato `JSON`, el `idToken` del usuario (no se enviará el `id` de usuario en texto plano):
+```
+{
+  "idToken": {...}
+}
+```
 
 ### Funciones de acceso restringido
 

@@ -27,6 +27,10 @@ BAD_TYPE_ID = ('Comprueba que el <type> indicado es válido (bocadillos, menu, '
                'otros) y que, en caso de haber pasado un <id>, éste también '
                'lo es.')
 
+BAD_IDTOKEN = ('No se ha podido verificar la integridad del idToken recibido.')
+
+VAL_EX = ('Ya existe una valoración del mismo usuario para este elemento.')
+
 #############################################
 
 logger = logging.getLogger(__name__)

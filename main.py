@@ -3,7 +3,7 @@ from flask import Flask, jsonify, redirect, request, render_template
 from flask_httpauth import HTTPBasicAuth
 from sqlalchemy import create_engine
 from sqlalchemy.exc import OperationalError
-from utils import updates, usuarios, bocadillos, imagenes, valoraciones, config
+from utils import config, updates, usuarios, bocadillos, imagenes, valoraciones
 from utils import logger as log
 import logging
 
@@ -89,7 +89,7 @@ def add_val(type, id):
                 if val is not None:
                     logger.warning("Ya existe una valoración del usuario " +
                                    "para este elemento.")
-                    raise Exception
+                    return render_template('400.html', expl=config.VAL_EX), 400
                 r = valoraciones.new_val(type, id, valoracion, usuario['id'],
                                          cx)
                 return jsonify(r)
@@ -102,10 +102,10 @@ def add_val(type, id):
                     return jsonify(r)
                 else:
                     logger.warning("No se ha podido añadir el usuario")
-                    raise Exception
+                    return render_template('500.html', errcode='USR.ADD'), 500
         else:
             logger.warning("El usuario no ha podido ser verificado")
-            raise Exception
+            return render_template('400.html', expl=config.BAD_IDTOKEN), 400
     except OperationalError:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                          "Ha ocurrido un error con la base de datos")
@@ -139,7 +139,7 @@ def get_val(type, id):
                 return jsonify(v)
         else:
             logger.warning("El usuario no ha podido ser verificado")
-            raise Exception
+            return render_template('400.html', expl=config.BAD_IDTOKEN), 400
     except OperationalError:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                          "Ha ocurrido un error con la base de datos")
