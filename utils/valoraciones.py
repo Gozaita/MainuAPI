@@ -129,7 +129,7 @@ def get_val(type, id, userId, cx):
         else:
             raise Exception
 
-        v = cx.execute('SELECT id, puntuacion, texto FROM %s WHERE ' % vt +
+        v = cx.execute('SELECT id, puntuacion, texto FROM %s ' % vt +
                        'WHERE %s=%d ' % (ct, id) +
                        'AND Usuario_id=\"%s\"' % userId).fetchone()
         if v is None:
@@ -147,6 +147,8 @@ def new_val(type, id, valoracion, userId, cx):
     """
     Añade una nueva valoración y llama a la función que actualiza la puntuacion
     """
+    # TODO: Cambiar visibilidad a False por defecto (en True para pruebas)
+    # TODO: Visibilidad por defecto a True para usuarios verificados
     logger.debug("Añade una nueva valoración")
     try:
         if type == 'bocadillos':
@@ -167,12 +169,12 @@ def new_val(type, id, valoracion, userId, cx):
         if texto is not None:
             cx.execute("INSERT INTO %s " % vt +
                        "(puntuacion, texto, visible, Usuario_id, %s) " % ct +
-                       "VALUE (%f, \"%s\", False, %s, %d)"
+                       "VALUE (%f, \"%s\", True, %s, %d)"
                        % (puntuacion, texto, userId, id))
         else:
             cx.execute("INSERT INTO %s " % vt +
                        "(puntuacion, visible, Usuario_id, %s) " % ct +
-                       "VALUE (%f, False, %s, %d)"
+                       "VALUE (%f, True, %s, %d)"
                        % (puntuacion, userId, id))
 
         update_punt(ct, vt, cx, id)
