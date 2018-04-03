@@ -1,23 +1,12 @@
 # -*- coding: utf-8 -*-
 from google.oauth2 import id_token
 from google.auth.transport import requests
+from utils import config
 import logging
 
-ROOT = ''  # ${ROOT_PATH} for production mode
-
-CLIENT_ID = ''
+CLIENT_ID = config.get('KEY', 'client_id')
 
 logger = logging.getLogger(__name__)
-
-
-def setup(r):
-    global ROOT, CLIENT_ID
-    ROOT = r
-    try:
-        CLIENT_ID = open(ROOT + 'sens_data/.client_id', 'r').read()
-        logger.info("Se ha accedido al CLIENT_ID")
-    except Exception:
-        logger.warning("Ha habido un problema al acceder al CLIENT_ID")
 
 
 def verify_token(idToken):
@@ -61,6 +50,7 @@ def add_user(id, nombre, mail, foto, cx):
         cx.execute("INSERT INTO Usuario (id, nombre, mail, foto) VALUES " +
                    "(\"%s\", \"%s\", \"%s\", \"%s\")" % (id, nombre,
                                                          mail, foto))
+        logger.debug("El usuario se ha añadido correctamente")
         return True
     except Exception:
         logger.exception("Ha ocurrido un error al añadir el usuario")
@@ -75,13 +65,15 @@ def user_exists(id, cx):
     """
     logger.info("Comprueba la existencia del usuario: %s" % id)
     try:
-        u = cx.execute("SELECT * FROM Usuario WHERE id=\"%s\"" % id)
+        u = cx.execute("SELECT * FROM Usuario WHERE id=\"%s\"" % id).fetchone()
 
         if u is not None:
             user = {'id': u['id'], 'nombre': u['nombre'], 'foto': u['foto'],
                     'verificado': u['verificado']}
+            logger.debug("El usuario existe")
             return user
         else:
+            logger.debug("El usuario no existe")
             return None
     except Exception:
         logger.exception("Ha ocurrido un error al comprobar el usuario")

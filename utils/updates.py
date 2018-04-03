@@ -1,35 +1,20 @@
+# -*- coding: utf-8 -*-
 from time import localtime, strftime
+from utils import config
 import logging
 import json
 import sys
 
-ROOT = ''  # ${ROOT_PATH} for production mode
-
-PATH = ''
-MAIN = ''
-BOCD = ''
-PLAT = ''
-OTHS = ''
-
 logger = logging.getLogger(__name__)
 
-main = {}
-bocd = {}
-plat = {}
-oths = {}
+PATH = config.get('PATH', 'root') + config.get('LAST_UPDATES', 'path')
+MAIN = PATH + config.get('LAST_UPDATES', 'main')
+BOCD = PATH + config.get('LAST_UPDATES', 'bocadillos')
+PLAT = PATH + config.get('LAST_UPDATES', 'platos')
+OTHS = PATH + config.get('LAST_UPDATES', 'otros')
 
 
-def setup(r):
-    global ROOT, PATH, MAIN, BOCD, PLAT, OTHS
-    ROOT = r
-    PATH = ROOT + 'last_updates/'
-    MAIN = PATH + 'main.json'
-    BOCD = PATH + 'bocadillos.json'
-    PLAT = PATH + 'platos.json'
-    OTHS = PATH + 'otros.json'
-
-    global main, bocd, plat, oths
-
+def init():
     try:
         mainf = open(MAIN, 'r')
         logger.info("Se ha encontrado el fichero: %s"
@@ -47,6 +32,8 @@ def setup(r):
         logger.error("No se ha podido acceder a uno o varios de los " +
                      "directorios de actualización")
         sys.exit(1)
+
+    global main, bocd, plat, oths
 
     main = json.load(mainf)
     mainf.close()
@@ -85,25 +72,30 @@ def write(dict):
 
 
 def get_last_update(type, id=None):
+    """
+    Devuelve la última fecha de modificación de una lista de <type> o de un
+    elemento concreto de la misma identificado por su <id>. Si el <type> no
+    se encuentra entre los admitidos o no se encuentra el <id>, se devolverá
+    un String vacío.
+    """
     res = ''
     if id is None:
         if type == 'bocadillos' or type == 'menu' or type == 'otros':
-            logger.info("type: %s" % type)
-            logger.info("El tamaño de main es %d" % len(main))
-            res = main[type]
+            logger.debug("type: %s" % type)
+            res = main.get(type, None)
         else:
             logger.warning("type: %s\n" % type +
                            "El tipo es inválido")
     else:
         if type == 'bocadillos':
-            logger.info("type: %s, id: %s" % (type, id))
-            res = bocd[id]
+            logger.debug("type: %s, id: %s" % (type, id))
+            res = bocd.get(id, None)
         elif type == 'menu':
-            logger.info("type: %s, id: %s" % (type, id))
-            res = plat[id]
+            logger.debug("type: %s, id: %s" % (type, id))
+            res = plat.get(id, None)
         elif type == 'otros':
-            logger.info("type: %s, id: %s" % (type, id))
-            res = oths[id]
+            logger.debug("type: %s, id: %s" % (type, id))
+            res = oths.get(id, None)
         else:
             logger.warning("type: %s, id: %s\n" % (type, id) +
                            "El tipo es inválido")
@@ -111,10 +103,15 @@ def get_last_update(type, id=None):
 
 
 def modify_last_update(type, id=None):
+    """
+    Actualiza la última fecha de modificación de una lista de <type> o de un
+    elemento concreto de la misma identificado por su <id>. Si el <type> no
+    se encuentra entre los admitidos, se devolverá un String vacío.
+    """
     time = strftime("%Y-%m-%d %H:%M:%S", localtime())
     if id is None:
         if type == 'bocadillos' or type == 'menu' or type == 'otros':
-            logger.info("type: %s" % type)
+            logger.debug("type: %s" % type)
             main[type] = time
             write(main)
         else:
@@ -123,15 +120,15 @@ def modify_last_update(type, id=None):
             return False
     else:
         if type == 'bocadillos':
-            logger.info("type: %s, id: %s" % (type, id))
+            logger.debug("type: %s, id: %s" % (type, id))
             bocd[id] = time
             write(bocd)
         elif type == 'menu':
-            logger.info("type: %s, id: %s" % (type, id))
+            logger.debug("type: %s, id: %s" % (type, id))
             plat[id] = time
             write(plat)
         elif type == 'otros':
-            logger.info("type: %s, id: %s" % (type, id))
+            logger.debug("type: %s, id: %s" % (type, id))
             oths[id] = time
             write(oths)
         else:

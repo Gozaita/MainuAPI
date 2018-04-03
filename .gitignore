@@ -1,9 +1,9 @@
 # Sensitive data
-sens_data/
+.config
 
 # Logs
 log/
 
 # Others
 last_updates/
-deleted_vals/
+.trash/

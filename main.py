@@ -1,43 +1,54 @@
 # -*- coding: utf-8 -*-
-from flask import Flask, jsonify, redirect, request
+from flask import Flask, jsonify, redirect, request, render_template
 from flask_httpauth import HTTPBasicAuth
 from sqlalchemy import create_engine
-from utils import updates, usuarios, bocadillos, imagenes, valoraciones
+from sqlalchemy.exc import OperationalError
+from utils import config, updates, usuarios, bocadillos, imagenes, valoraciones
 from utils import logger as log
 import logging
-import json
-
-ROOT = ''   # ${ROOT_PATH} for production mode
-IMG_ROOT = ''  # ${IMG_ROOT_PATH} for production mode
-
-URI = open(ROOT + 'sens_data/.mainudb', 'r').read()
-
-API_MAIN = "https://www.mainu.eus/api"
-
-db = create_engine(URI)
-app = Flask(__name__)
-
-log.setup(ROOT)
-updates.setup(ROOT)
-usuarios.setup(ROOT)
-imagenes.setup(IMG_ROOT)
-valoraciones.setup(ROOT)
-
-handler = log.get_handler()
-app.logger.addHandler(handler)
-app.logger.setLevel(logging.DEBUG)
 
 logger = logging.getLogger(__name__)
 
+handler = log.get_handler()
+app = Flask(__name__)
 auth = HTTPBasicAuth()
-users = json.load(open(ROOT + 'sens_data/.users.json', 'r'))
+app.logger.addHandler(handler)
+app.logger.setLevel(logging.DEBUG)
+
+updates.init()
+
+user, pswd, host, schm = config.get_database()
+HTTP_USERS = config.get_httpauth()
+API_MAIN = config.get('PATH', 'api')
+
+db = create_engine('mysql://%s:%s@%s/%s' % (user, pswd, host, schm))
 
 
 @auth.get_password
 def get_pw(username):
-    if username in users:
-        return users.get(username)
+    if username in HTTP_USERS:
+        return HTTP_USERS.get(username)
     return None
+
+
+@app.errorhandler(400)
+def bad_request(e):
+    return render_template('400.html'), 400
+
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+
+@app.errorhandler(405)
+def bad_method(e):
+    return render_template('405.html'), 405
+
+
+@app.errorhandler(500)
+def server_error(e):
+    return render_template('500.html'), 500
 
 #############################################
 # MainU API
@@ -48,11 +59,47 @@ def get_pw(username):
 #############################################
 
 
-# TODO: add_image(idToken, type, id, image)
+@app.route('/upload_image/<type>/<int:id>', methods=['POST'])
+def add_image(type, id):
+    """
+    Añade una nueva foto del tipo <type> (bocadillo, menu, otros). Debe recibir
+    en formato JSON el idToken y la imagen condificada en base64. Guarda la
+    imágen en el fichero correspondiente y se añade una URL en la BD para poder
+    recuperarla.
+    """
+    logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                "Añade una imagen para: %s, %d" % (type, id))
+    # TODO: add_image(idToken, type, id, image)
+    try:
+        cx = db.connect()
+        data = request.get_json(silent=True)
+        idToken = data['idToken']
+        img = data['imagen']
+        usuario = usuarios.verify_token(idToken)
+        if usuario is not None:
+            u = usuarios.user_exists(usuario['id'], cx)
+            if u is not None:
+                nombre = imagenes.envia_img(img, id)
+                imagenes.envia_URL(id, type, nombre, cx, usuario['id'])
+            else:
+                r = usuarios.add_user(usuario['id'], usuario['nombre'],
+                                      usuario['mail'], usuario['foto'], cx)
+                if r is not None:
+                    nombre = imagenes.envia_img(img, id)
+                    imagenes.envia_URL(id, type, nombre, cx, usuario['id'])
+                    return jsonify(r)
+                else:
+                    logger.warning("No se ha podido añadir el usuario")
+                    return render_template('500.html', errcode='USR.ADD'), 500
+    except Exception:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido una excepción durante la operación")
+        return render_template('500.html'), 500
 
 #############################################
 # Valoraciones
 #############################################
+
 
 @app.route('/add_valoracion/<type>/<int:id>', methods=['POST'])
 def add_val(type, id):
@@ -74,26 +121,69 @@ def add_val(type, id):
             u = usuarios.user_exists(usuario['id'], cx)
             if u is not None:
                 # TODO: Actualizar datos de la BD si son diferentes (foto...)
+                val = valoraciones.get_val(type, id, usuario['id'], cx)
+                if val is not None:
+                    logger.warning("Ya existe una valoración del usuario " +
+                                   "para este elemento.")
+                    return render_template('400.html', expl=config.VAL_EX), 400
                 r = valoraciones.new_val(type, id, valoracion, usuario['id'],
                                          cx)
                 return jsonify(r)
             else:
                 r = usuarios.add_user(usuario['id'], usuario['nombre'],
-                                      usuario['mail'], usuario['foto'])
+                                      usuario['mail'], usuario['foto'], cx)
                 if r is not None:
-                    r = valoraciones.new_val(type, valoracion, usuario['id'],
-                                             cx)
+                    r = valoraciones.new_val(type, id, valoracion,
+                                             usuario['id'], cx)
                     return jsonify(r)
                 else:
                     logger.warning("No se ha podido añadir el usuario")
-                    raise Exception
+                    return render_template('500.html', errcode='USR.ADD'), 500
         else:
             logger.warning("El usuario no ha podido ser verificado")
-            raise Exception
+            return render_template('400.html', expl=config.BAD_IDTOKEN), 400
+    except OperationalError:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido un error con la base de datos")
+        return render_template('500.html', errcode='SQL'), 500
     except Exception:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
-                         "Ha ocurrido una excepción")
-        return None
+                         "Ha ocurrido una excepción durante la petición")
+        return render_template('500.html'), 500
+
+
+@app.route("/valoracion/<type>/<int:id>", methods=["POST"])
+def get_val(type, id):
+    """
+    Devuelve la valoración de un usuario para el elemento dado, en caso
+    de que exista. Si no existe, devuelve False.
+    """
+    logger.debug("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                 "Solicita valoración de usuario: %s, %d" % (type, id))
+    try:
+        cx = db.connect()
+        data = request.get_json(silent=True)
+        idToken = data['idToken']
+        usuario = usuarios.verify_token(idToken)
+        if usuario is not None:
+            v = valoraciones.get_val(type, id, usuario['id'], cx)
+            if v is None:
+                logger.debug("No existe valoración de usuario")
+                return jsonify(False)
+            else:
+                logger.debug("El usuario ya ha valorado este producto")
+                return jsonify(v)
+        else:
+            logger.warning("El usuario no ha podido ser verificado")
+            return render_template('400.html', expl=config.BAD_IDTOKEN), 400
+    except OperationalError:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido un error con la base de datos")
+        return render_template('500.html', errcode='SQL'), 500
+    except Exception:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido una excepción durante la petición")
+        return render_template('500.html'), 500
 
 
 @app.route("/valoraciones/<type>", methods=["GET"])
@@ -109,11 +199,19 @@ def get_invisible_vals(type):
         cx = db.connect()
         r = valoraciones.get_invisible_vals(type, cx)
         cx.close
+        if r is None:
+            return render_template('500.html', errcode='VAL.GET_INV_VALS'), 500
+        elif r is False:
+            return render_template('400.html', expl=config.BAD_TYPE), 400
         return jsonify(r)
+    except OperationalError:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido un error con la base de datos")
+        return render_template('500.html', errcode='SQL'), 500
     except Exception:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                          "Ha ocurrido una excepción durante la petición")
-        return None
+        return render_template('500.html'), 500
 
 
 @app.route("/update_val/<type>/<int:id>", methods=["GET"])
@@ -129,17 +227,27 @@ def update_val(type, id):
     try:
         action = request.args.get('action', default=None)
         if action is None:
-            raise Exception
+            logger.warning("No se ha pasado una acción como parámetro")
+            return render_template('400.html', expl=config.BAD_ACTION), 400
         elif action != 'visible' and action != 'delete':
-            raise Exception
+            logger.warning("La acción que se ha pasado no es válida")
+            return render_template('400.html', expl=config.BAD_ACTION), 400
         cx = db.connect()
         r = valoraciones.update_val(type, id, action, cx)
+        if r is None:
+            return render_template('500.html', errcode='VAL.UPDATE_VAL'), 500
+        elif r is False:
+            return render_template('400.html', expl=config.BAD_TYPE), 400
         cx.close
         return jsonify(r)
+    except OperationalError:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido un error con la base de datos")
+        return render_template('500.html', errcode='SQL'), 500
     except Exception:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                          "Ha ocurrido una excepción durante la petición")
-        return None
+        return render_template('500.html'), 500
 
 #############################################
 # Bocadillos
@@ -157,10 +265,14 @@ def get_ingredientes():
         cx = db.connect()
         ings = bocadillos.get_ings_all(cx)
         return jsonify(ings)
+    except OperationalError:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido un error con la base de datos")
+        return render_template('500.html', errcode='SQL'), 500
     except Exception:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                          "Ha ocurrido una excepción durante la petición")
-        return None
+        return render_template('500.html'), 500
 
 
 @app.route("/bocadillos", methods=["GET"])
@@ -181,10 +293,14 @@ def get_bocadillos():
             bocs_final.append(boc)
         cx.close()
         return jsonify(bocs_final)
+    except OperationalError:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido un error con la base de datos")
+        return render_template('500.html', errcode='SQL'), 500
     except Exception:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                          "Ha ocurrido una excepción durante la petición")
-        return None
+        return render_template('500.html'), 500
 
 
 @app.route("/bocadillos/<int:id>", methods=["GET"])
@@ -202,14 +318,21 @@ def get_bocadillo_by_id(id):
         imgs = imagenes.get_imgs('bocadillos', id, cx)
         vals = valoraciones.get_vals('bocadillos', id, cx)
         cx.close()
-        boc = {'id': b['id'], 'nombre': b['nombre'], 'precio': b['precio'],
-               'puntuacion': b['puntuacion'], 'ingredientes': ings,
-               'images': imgs, 'valoraciones': vals}
-        return jsonify(boc)
+        if b is None:
+            return render_template('400.html', expl=config.BAD_ID), 400
+        else:
+            boc = {'id': b['id'], 'nombre': b['nombre'], 'precio': b['precio'],
+                   'puntuacion': b['puntuacion'], 'ingredientes': ings,
+                   'images': imgs, 'valoraciones': vals}
+            return jsonify(boc)
+    except OperationalError:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido un error con la base de datos")
+        return render_template('500.html', errcode='SQL'), 500
     except Exception:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                          "Ha ocurrido una excepción durante la petición")
-        return None
+        return render_template('500.html'), 500
 
 #############################################
 # Platos
@@ -244,10 +367,14 @@ def get_menu():
                 ps.append(pl)
         cx.close()
         return jsonify({'primeros': pr, 'segundos': sg, 'postre': ps})
+    except OperationalError:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido un error con la base de datos")
+        return render_template('500.html', errcode='SQL'), 500
     except Exception:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                          "Ha ocurrido una excepción durante la petición")
-        return None
+        return render_template('500.html'), 500
 
 
 @app.route("/menu/<int:id>", methods=["GET"])
@@ -265,14 +392,21 @@ def get_plato_by_id(id):
         imgs = imagenes.get_imgs('menu', id, cx)
         vals = valoraciones.get_vals('menu', id, cx)
         cx.close()
-        plt = {'id': p['id'], 'nombre': p['nombre'], 'puntuacion':
-               p['puntuacion'], 'descripcion': p['descripcion'],
-               'tipo': p['tipo'], 'images': imgs, 'valoraciones': vals}
-        return jsonify(plt)
+        if p is None:
+            return render_template('400.html', expl=config.BAD_ID), 400
+        else:
+            plt = {'id': p['id'], 'nombre': p['nombre'], 'puntuacion':
+                   p['puntuacion'], 'descripcion': p['descripcion'],
+                   'tipo': p['tipo'], 'images': imgs, 'valoraciones': vals}
+            return jsonify(plt)
+    except OperationalError:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido un error con la base de datos")
+        return render_template('500.html', errcode='SQL'), 500
     except Exception:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                          "Ha ocurrido una excepción durante la petición")
-        return None
+        return render_template('500.html'), 500
 
 #############################################
 # Otros
@@ -301,10 +435,14 @@ def get_otros():
             otros_final.append(otro)
         cx.close()
         return jsonify(otros_final)
+    except OperationalError:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido un error con la base de datos")
+        return render_template('500.html', errcode='SQL'), 500
     except Exception:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                          "Ha ocurrido una excepción durante la petición")
-        return None
+        return render_template('500.html'), 500
 
 
 @app.route("/otros/<int:id>", methods=["GET"])
@@ -323,14 +461,21 @@ def get_otro_by_id(id):
         imgs = imagenes.get_imgs('otros', id, cx)
         vals = valoraciones.get_vals('otros', id, cx)
         cx.close()
-        otr = {'id': o['id'], 'nombre': o['nombre'], 'puntuacion':
-               o['puntuacion'], 'precio': o['precio'], 'images': imgs,
-               'tipo': o['tipo'], 'valoraciones': vals}
-        return jsonify(otr)
+        if o is None:
+            return render_template('400.html', expl=config.BAD_ID), 400
+        else:
+            otr = {'id': o['id'], 'nombre': o['nombre'], 'puntuacion':
+                   o['puntuacion'], 'precio': o['precio'], 'images': imgs,
+                   'tipo': o['tipo'], 'valoraciones': vals}
+            return jsonify(otr)
+    except OperationalError:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido un error con la base de datos")
+        return render_template('500.html', errcode='SQL'), 500
     except Exception:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                          "Ha ocurrido una excepción durante la petición")
-        return None
+        return render_template('500.html'), 500
 
 #############################################
 # Last updates
@@ -349,12 +494,13 @@ def get_last_update(type, id=None):
     Si se pasa además el parámetro <id> se devolverá información del
     bocadillo, plato del menú u otro (p. ej.: /last_update/menu/5).
     """
-    logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
-                "Devuelve última fecha de modificación")
-    if id is None:
-        r = updates.get_last_update(type)
-    else:
-        r = updates.get_last_update(type, id)
+    logger.debug("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                 "Devuelve última fecha de modificación")
+
+    r = updates.get_last_update(type, id)
+
+    if not r:
+        return render_template("400.html", expl=config.BAD_TYPE_ID), 400
     return jsonify(r)
 
 
@@ -367,12 +513,13 @@ def modify_last_update(type, id=None):
     que se pase la fecha ni la hora, la función será la responsable de
     introducirla.
     """
-    logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
-                "Actualiza la última fecha de modificación")
-    if id is None:
-        r = updates.modify_last_update(type)
-    else:
-        r = updates.modify_last_update(type, id)
+    logger.debug("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                 "Actualiza la última fecha de modificación")
+
+    r = updates.modify_last_update(type, id)
+
+    if r is False:
+        return render_template("400.html", expl=config.BAD_TYPE), 400
     return jsonify(r)
 
 #############################################
@@ -388,14 +535,6 @@ def api_main():
     logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                 "Redirige a %s" % API_MAIN)
     return redirect(API_MAIN)
-
-
-@app.route('/test_upload', methods=['POST'])
-def upload_file():
-    logger.info("Image received")
-    logger.info(request.files)
-    logger.info(request.form)
-    return "Files received"
 
 
 if __name__ == '__main__':

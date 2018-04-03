@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
 from time import localtime, strftime
 from logging import FileHandler
+from utils import config
 import os
 import logging
-
-ROOT = ''  # ${ROOT_PATH} for production mode
-
-LOG_PATH = ''
 
 
 def get_handler():
@@ -20,26 +17,25 @@ def get_handler():
     return handler
 
 
-def setup(r):
-    global ROOT, LOG_PATH
-    ROOT = r
-    LOG_PATH = ROOT + 'log/mainu.log'
-    try:
-        log = open(LOG_PATH, 'a')
-    except FileNotFoundError:
-        if not os.path.exists(os.path.dirname(LOG_PATH)):
-            os.makedirs(os.path.dirname(LOG_PATH))
-        log = open(LOG_PATH, 'w')
+LOG_PATH = config.get('PATH', 'root') + config.get('PATH', 'log')
 
-    log.write("##############################################\n")
-    log.write("MainU -- mainu.eus -- %s\n"
-              % strftime("%Y-%m-%d %H:%M:%S", localtime()))
-    log.write("API REST\n")
-    log.write("##############################################\n")
-    log.close()
+try:
+    log = open(LOG_PATH, 'a')
+except FileNotFoundError:
+    if not os.path.exists(os.path.dirname(LOG_PATH)):
+        os.makedirs(os.path.dirname(LOG_PATH))
+    log = open(LOG_PATH, 'w')
 
-    logging.basicConfig(level=logging.DEBUG,
-                        handlers=[get_handler()])
 
-    log = logging.getLogger('werkzeug')
-    log.setLevel(logging.ERROR)
+log.write("##############################################\n")
+log.write("MainU -- mainu.eus -- %s\n"
+          % strftime("%Y-%m-%d %H:%M:%S", localtime()))
+log.write("API REST\n")
+log.write("##############################################\n")
+log.close()
+
+logging.basicConfig(level=logging.DEBUG,
+                    handlers=[get_handler()])
+
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)

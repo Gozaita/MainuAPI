@@ -1,18 +1,10 @@
 # -*- coding: utf-8 -*-
+from utils import config
 import logging
 
-ROOT = ''  # ${ROOT_PATH} for production mode
-
-DEL_VALS = ''
+TRASH = config.get('PATH', 'root') + config.get('PATH', 'trash')
 
 logger = logging.getLogger(__name__)
-
-
-def setup(r):
-    global ROOT, DEL_VALS
-    ROOT = r
-    DEL_VALS = ROOT + 'deleted_vals/'
-    logger.info("Se ha establecido el directorio DEL_VALS: %s" % DEL_VALS)
 
 
 def get_vals(type, id, cx):
@@ -20,6 +12,7 @@ def get_vals(type, id, cx):
     Devuelve todas las valoraciones asociadas a un elemento con un <id> del
     tipo <type> que se especifique. Solo devuelve aquellas visibles.
     """
+    logger.debug("Devuelve las valoraciones asociadas: %s, %d" % (type, id))
     try:
         if type == 'bocadillos':
             vt = 'ValoracionBocadillo'
@@ -31,7 +24,8 @@ def get_vals(type, id, cx):
             vt = 'ValoracionOtro'
             cl = 'Otro_id'
         else:
-            raise Exception
+            logger.error("El tipo que se ha pasado no es válido")
+            return False
 
         vls = cx.execute("SELECT v.id, v.puntuacion, v.texto, v.Usuario_id, " +
                          "u.nombre, u.foto, u.verificado FROM %s AS v " % vt +
@@ -61,7 +55,8 @@ def get_invisible_vals(type, cx):
         elif type == 'otros':
             vt = 'ValoracionOtro'
         else:
-            raise Exception
+            logger.error("El tipo que se ha pasado no es válido")
+            return False
 
         vls = cx.execute("SELECT v.id, v.puntuacion, v.texto, v.Usuario_id, " +
                          "u.nombre, u.foto, u.verificado FROM %s AS v " % vt +
@@ -90,22 +85,59 @@ def update_val(type, id, action, cx):
         elif type == 'otros':
             vt = 'ValoracionOtro'
         else:
-            raise Exception
+            logger.error("El tipo que se ha pasado no es válido")
+            return False
 
         if action == 'visible':
             cx.execute("UPDATE %s SET visible=True WHERE id=%d" % (vt, id))
+            logger.debug("La valoración se ha hecho visible")
             return True
         elif action == 'delete':
             val = cx.execute("SELECT * FROM %s WHERE id=%d"
                              % (vt, id)).fetchone()
-            v = open(DEL_VALS + type + '_' + str(id), 'w')
+            v = open(TRASH + type + '_' + str(id), 'w')
             v.write("##############################################\n")
             v.write("%s, %d\n" % (type, id))
             v.write("%s\n" % val)
             v.write("##############################################\n")
             v.close()
             cx.execute("DELETE FROM %s WHERE id=%d" % (vt, id))
+            logger.debug("La valoración se ha borrado")
             return True
+        else:
+            return False
+    except Exception:
+        logger.exception("Ha ocurrido una excepción durante la petición")
+        return None
+
+
+def get_val(type, id, userId, cx):
+    """
+    Devuelve la valoración de un usuario, si existe, para un elemento con el
+    <id> dado y del <type> indicado.
+    """
+    try:
+        if type == 'bocadillos':
+            vt = 'ValoracionBocadillo'
+            ct = 'Bocadillo_id'
+        elif type == 'menu':
+            vt = 'ValoracionPlato'
+            ct = 'Plato_id'
+        elif type == 'otros':
+            vt = 'ValoracionOtro'
+            ct = 'Otro_id'
+        else:
+            raise Exception
+
+        v = cx.execute('SELECT id, puntuacion, texto FROM %s ' % vt +
+                       'WHERE %s=%d ' % (ct, id) +
+                       'AND Usuario_id=\"%s\"' % userId).fetchone()
+        if v is None:
+            return None
+        else:
+            val = {'id': v['id'], 'puntuacion': v['puntuacion'],
+                   'texto': v['texto']}
+            return val
     except Exception:
         logger.exception("Ha ocurrido una excepción durante la petición")
         return None
@@ -115,6 +147,9 @@ def new_val(type, id, valoracion, userId, cx):
     """
     Añade una nueva valoración y llama a la función que actualiza la puntuacion
     """
+    # TODO: Cambiar visibilidad a False por defecto (en True para pruebas)
+    # TODO: Visibilidad por defecto a True para usuarios verificados
+    logger.debug("Añade una nueva valoración")
     try:
         if type == 'bocadillos':
             vt = 'ValoracionBocadillo'
@@ -134,16 +169,17 @@ def new_val(type, id, valoracion, userId, cx):
         if texto is not None:
             cx.execute("INSERT INTO %s " % vt +
                        "(puntuacion, texto, visible, Usuario_id, %s) " % ct +
-                       "VALUE (%f, \"%s\", False, %s, %d)"
+                       "VALUE (%f, \"%s\", True, %s, %d)"
                        % (puntuacion, texto, userId, id))
         else:
             cx.execute("INSERT INTO %s " % vt +
                        "(puntuacion, visible, Usuario_id, %s) " % ct +
-                       "VALUE (%f, False, %s, %d)"
+                       "VALUE (%f, True, %s, %d)"
                        % (puntuacion, userId, id))
 
         update_punt(ct, vt, cx, id)
         cx.close()
+        logger.debug("La valoración se ha añadido")
         return True
     except Exception:
         logger.exception("Ha ocurrido una excepción durante la petición")
@@ -155,7 +191,7 @@ def update_punt(ct, vt, cx, id):
     Crea una lista de todos las puntuaciones y calcula la media para luego
     actualizarlo en la tabla=vt, id=ct
     """
-    logger.info("Actualiza la puntuación")
+    logger.debug("Actualiza la puntuación")
     try:
         if vt == 'ValoracionBocadillo':
             tabla = 'Bocadillo'
@@ -166,7 +202,7 @@ def update_punt(ct, vt, cx, id):
         else:
             raise Exception
         vls = cx.execute("SELECT v.puntuacion FROM %s AS v " % vt +
-                         "WHERE %s=%d" % (ct, id))
+                         "WHERE %s=%d" % (ct, id)).fetchall()
         if vls is not None:
             i = 0
             p = 0
@@ -176,6 +212,8 @@ def update_punt(ct, vt, cx, id):
         punt = p / len(vls)
         cx.execute("UPDATE %s SET puntuacion=%f WHERE id=%d"
                    % (tabla, punt, id))
+        logger.debug("Puntuación actualizada para (%s, %d): %f" % (tabla, id,
+                                                                   punt))
         return True
     except Exception:
         logger.exception("Ha ocurrido una excepción")
