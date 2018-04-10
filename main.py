@@ -64,12 +64,11 @@ def add_image(type, id):
     """
     Añade una nueva foto del tipo <type> (bocadillo, menu, otros). Debe recibir
     en formato JSON el idToken y la imagen condificada en base64. Guarda la
-    imágen en el fichero correspondiente y se añade una URL en la BD para poder
+    imagen en el fichero correspondiente y se añade una URL en la BD para poder
     recuperarla.
     """
     logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                 "Añade una imagen para: %s, %d" % (type, id))
-    # TODO: add_image(idToken, type, id, image)
     try:
         cx = db.connect()
         data = request.get_json(silent=True)

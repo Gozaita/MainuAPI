@@ -72,11 +72,11 @@ def crea_nombre(id):
 def envia_img(img, id, type):
     try:
         if type == 'bocadillos':
-            path = BOC_PATH
+            path = BOCW_PATH
         elif type == 'menu':
-            path = PLT_PATH
+            path = PLTW_PATH
         elif type == 'otros':
-            path = OTH_PATH
+            path = OTHW_PATH
         else:
             raise Exception
         imagen = base64.decodestring(img)
