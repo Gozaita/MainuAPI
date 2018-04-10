@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from utils import config
 import logging
+import base64
+import time
 
 SRV_PATH = config.get('IMAGES', 'server')
 IMG_PATH = SRV_PATH + config.get('IMAGES', 'images')
@@ -54,4 +56,60 @@ def get_imgs(type, id, cx):
         return imgs
     except Exception:
         logger.exception("Ha ocurrido una excepción durante la petición")
+        return None
+
+
+def crea_nombre(id):
+    try:
+        timestamp = time.strftime("%Y-%m-%d--%H-%M-%S")
+        nombre = str(id)+'_'+timestamp
+        return nombre
+    except Exception:
+        logger.exception("Ha ocurrido una excepción durante la petición")
+        return None
+
+
+def envia_img(img, id, type):
+    try:
+        if type == 'bocadillos':
+            path = BOC_PATH
+        elif type == 'menu':
+            path = PLT_PATH
+        elif type == 'otros':
+            path = OTH_PATH
+        else:
+            raise Exception
+        imagen = base64.decodestring(img)
+        nombre = crea_nombre(id)
+        f = open(path+nombre+'.jpg', "w")
+        f.write(imagen)
+        f.close()
+        return True
+    except Exception:
+        logger.exception("Ha ocurrido un error")
+        return None
+
+
+def envia_URL(id, type, nombre, cx, usr_id):
+    try:
+        if type == 'bocadillos':
+            ft = 'FotoBocadillo'
+            cl = 'Bocadillo_id'
+        elif type == 'menu':
+            ft = 'FotoPlato'
+            cl = 'Plato_id'
+        elif type == 'otros':
+            ft = 'FotoOtro'
+            cl = 'Otro_id'
+        else:
+            raise Exception
+        cx.execute("INSERT INTO %s " % ft +
+                   "(ruta, visible, oficial, %s, Usuario_id) " % cl +
+                   "VALUE (%s, False, False,  %d, %d)"
+                   % (nombre, id, usr_id))
+        cx.close()
+        logger.debug("La URL se ha añadido correctamente")
+        return True
+    except Exception:
+        logger.exception("Ha ocurrido un error")
         return None

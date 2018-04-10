@@ -59,11 +59,47 @@ def server_error(e):
 #############################################
 
 
-# TODO: add_image(idToken, type, id, image)
+@app.route('/upload_image/<type>/<int:id>', methods=['POST'])
+def add_image(type, id):
+    """
+    Añade una nueva foto del tipo <type> (bocadillo, menu, otros). Debe recibir
+    en formato JSON el idToken y la imagen condificada en base64. Guarda la
+    imágen en el fichero correspondiente y se añade una URL en la BD para poder
+    recuperarla.
+    """
+    logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                "Añade una imagen para: %s, %d" % (type, id))
+    # TODO: add_image(idToken, type, id, image)
+    try:
+        cx = db.connect()
+        data = request.get_json(silent=True)
+        idToken = data['idToken']
+        img = data['imagen']
+        usuario = usuarios.verify_token(idToken)
+        if usuario is not None:
+            u = usuarios.user_exists(usuario['id'], cx)
+            if u is not None:
+                nombre = imagenes.envia_img(img, id)
+                imagenes.envia_URL(id, type, nombre, cx, usuario['id'])
+            else:
+                r = usuarios.add_user(usuario['id'], usuario['nombre'],
+                                      usuario['mail'], usuario['foto'], cx)
+                if r is not None:
+                    nombre = imagenes.envia_img(img, id)
+                    imagenes.envia_URL(id, type, nombre, cx, usuario['id'])
+                    return jsonify(r)
+                else:
+                    logger.warning("No se ha podido añadir el usuario")
+                    return render_template('500.html', errcode='USR.ADD'), 500
+    except Exception:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido una excepción durante la operación")
+        return render_template('500.html'), 500
 
 #############################################
 # Valoraciones
 #############################################
+
 
 @app.route('/add_valoracion/<type>/<int:id>', methods=['POST'])
 def add_val(type, id):
