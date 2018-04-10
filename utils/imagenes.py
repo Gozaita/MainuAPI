@@ -69,7 +69,7 @@ def crea_nombre(id):
         return None
 
 
-def envia_img(img, id, type):
+def write_img(img, id, type):
     try:
         if type == 'bocadillos':
             path = BOCW_PATH
@@ -79,18 +79,18 @@ def envia_img(img, id, type):
             path = OTHW_PATH
         else:
             raise Exception
-        imagen = base64.decodestring(img)
+        imagen = base64.decodebytes(img)
         nombre = crea_nombre(id)
-        f = open(path+nombre+'.jpg', "w")
+        f = open(path + nombre + '.jpg', "wb")
         f.write(imagen)
         f.close()
-        return True
+        return nombre
     except Exception:
         logger.exception("Ha ocurrido un error")
         return None
 
 
-def envia_URL(id, type, nombre, cx, usr_id):
+def update_db(id, type, nombre, cx, usr_id):
     try:
         if type == 'bocadillos':
             ft = 'FotoBocadillo'
@@ -105,7 +105,7 @@ def envia_URL(id, type, nombre, cx, usr_id):
             raise Exception
         cx.execute("INSERT INTO %s " % ft +
                    "(ruta, visible, oficial, %s, Usuario_id) " % cl +
-                   "VALUE (%s, False, False,  %d, %d)"
+                   "VALUE (%s, False, False,  %d, %s)"
                    % (nombre, id, usr_id))
         cx.close()
         logger.debug("La URL se ha añadido correctamente")

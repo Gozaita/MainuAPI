@@ -73,19 +73,23 @@ def add_image(type, id):
         cx = db.connect()
         data = request.get_json(silent=True)
         idToken = data['idToken']
-        img = data['imagen']
+        img = data['imagen'].encode('utf-8')
         usuario = usuarios.verify_token(idToken)
         if usuario is not None:
             u = usuarios.user_exists(usuario['id'], cx)
             if u is not None:
-                nombre = imagenes.envia_img(img, id)
-                imagenes.envia_URL(id, type, nombre, cx, usuario['id'])
+                nombre = imagenes.write_img(img, id, type)
+                if nombre is None:
+                    raise Exception
+                imagenes.update_db(id, type, nombre, cx, usuario['id'])
             else:
                 r = usuarios.add_user(usuario['id'], usuario['nombre'],
                                       usuario['mail'], usuario['foto'], cx)
                 if r is not None:
-                    nombre = imagenes.envia_img(img, id)
-                    imagenes.envia_URL(id, type, nombre, cx, usuario['id'])
+                    nombre = imagenes.write_img(img, id, type)
+                    if nombre is None:
+                        raise Exception
+                    imagenes.update_db(id, type, nombre, cx, usuario['id'])
                     return jsonify(r)
                 else:
                     logger.warning("No se ha podido añadir el usuario")
