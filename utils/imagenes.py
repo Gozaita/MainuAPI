@@ -105,7 +105,7 @@ def update_db(id, type, nombre, cx, usr_id):
             raise Exception
         cx.execute("INSERT INTO %s " % ft +
                    "(ruta, visible, oficial, %s, Usuario_id) " % cl +
-                   "VALUE (%s, False, False,  %d, %s)"
+                   "VALUE (%s, True, True,  %d, %s)"
                    % (nombre, id, usr_id))
         cx.close()
         logger.debug("La URL se ha añadido correctamente")
