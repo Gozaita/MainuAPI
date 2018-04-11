@@ -82,6 +82,7 @@ def add_image(type, id):
                 if nombre is None:
                     raise Exception
                 imagenes.update_db(id, type, nombre, cx, usuario['id'])
+                return jsonify(True)
             else:
                 r = usuarios.add_user(usuario['id'], usuario['nombre'],
                                       usuario['mail'], usuario['foto'], cx)
@@ -90,7 +91,7 @@ def add_image(type, id):
                     if nombre is None:
                         raise Exception
                     imagenes.update_db(id, type, nombre, cx, usuario['id'])
-                    return jsonify(r)
+                    return jsonify(True)
                 else:
                     logger.warning("No se ha podido añadir el usuario")
                     return render_template('500.html', errcode='USR.ADD'), 500
