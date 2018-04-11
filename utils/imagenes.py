@@ -84,13 +84,14 @@ def write_img(img, id, type):
         f = open(path + nombre + '.jpg', "wb")
         f.write(imagen)
         f.close()
+        logger.debug("La imagen se ha guardado con el nombre: %s" % nombre)
         return nombre
     except Exception:
         logger.exception("Ha ocurrido un error")
         return None
 
 
-def update_db(id, type, nombre, cx, usr_id):
+def update_db(id, type, nombre, cx, userId):
     try:
         if type == 'bocadillos':
             ft = 'FotoBocadillo'
@@ -105,10 +106,10 @@ def update_db(id, type, nombre, cx, usr_id):
             raise Exception
         cx.execute("INSERT INTO %s " % ft +
                    "(ruta, visible, oficial, %s, Usuario_id) " % cl +
-                   "VALUE (%s, True, True,  %d, %s)"
-                   % (nombre, id, usr_id))
+                   "VALUE (\"%s\", True, True,  %d, \"%s\")"
+                   % (nombre, id, userId))
         cx.close()
-        logger.debug("La URL se ha añadido correctamente")
+        logger.debug("La base de datos se ha actualizado correctamente")
         return True
     except Exception:
         logger.exception("Ha ocurrido un error")
