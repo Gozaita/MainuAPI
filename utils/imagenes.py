@@ -80,8 +80,8 @@ def write_img(img, id, type):
         else:
             raise Exception
         imagen = base64.decodebytes(img)
-        nombre = crea_nombre(id)
-        f = open(path + nombre + '.jpg', "wb")
+        nombre = crea_nombre(id) + '.jpg'
+        f = open(path + nombre, "wb")
         f.write(imagen)
         f.close()
         logger.debug("La imagen se ha guardado con el nombre: %s" % nombre)
