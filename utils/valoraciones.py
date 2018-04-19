@@ -76,6 +76,26 @@ def get_invisible_vals(type, cx):
         return None
 
 
+def append_vals(vals, type, cx):
+        n_vals = get_invisible_vals(type, cx)
+        for v in n_vals:
+            v['type'] = type
+            vals.append(v)
+        return vals
+
+
+def get_all_invisible_vals(cx):
+    try:
+        vals = []
+        vals = append_vals(vals, 'bocadillos', cx)
+        vals = append_vals(vals, 'menu', cx)
+        vals = append_vals(vals, 'otros', cx)
+        return vals
+    except Exception:
+        logger.exception("Ha ocurrido una excepción durante la petición")
+        return None
+
+
 def update_val(type, id, action, cx):
     try:
         if type == 'bocadillos':

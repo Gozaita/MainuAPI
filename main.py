@@ -190,6 +190,33 @@ def get_val(type, id):
         return render_template('500.html'), 500
 
 
+@app.route("/valoraciones", methods=["GET"])
+@auth.login_required
+def get_all_invisible_vals():
+    """
+    Devuelve todas las valoraciones ocultas para todos los elementos.
+    """
+    logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                "Devuelve todas las valoraciones ocultas")
+    try:
+        cx = db.connect()
+        r = valoraciones.get_all_invisible_vals(cx)
+        cx.close
+        if r is None:
+            return render_template('500.html', errcode='VAL.GET_INV_VALS'), 500
+        elif r is False:
+            return render_template('400.html'), 400
+        return jsonify(r)
+    except OperationalError:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido un error con la base de datos")
+        return render_template('500.html', errcode='SQL'), 500
+    except Exception:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido una excepción durante la petición")
+        return render_template('500.html'), 500
+
+
 @app.route("/valoraciones/<type>", methods=["GET"])
 @auth.login_required
 def get_invisible_vals(type):
