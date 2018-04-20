@@ -63,10 +63,13 @@ def get_invisible_imgs(type, cx):
     try:
         if type == 'bocadillos':
             ft = 'FotoBocadillo'
+            path = BOC_PATH
         elif type == 'menu':
             ft = 'FotoPlato'
+            path = PLT_PATH
         elif type == 'otros':
             ft = 'FotoOtro'
+            path = OTH_PATH
         else:
             logger.error("El tipo que se ha pasado no es válido")
             return False
@@ -78,10 +81,10 @@ def get_invisible_imgs(type, cx):
         imgs = []
         if ims is not None:
             for i in ims:
+                img = path + i['ruta']
                 us = {'id': i['Usuario_id'], 'nombre': i['nombre'],
                       'foto': i['foto'], 'verificado': i['verificado']}
-                img = {'id': i['id'], 'ruta': i['ruta'], 'usuario': us}
-                imgs.append(img)
+                imgs.append({'id': i['id'], 'url': img, 'usuario': us})
         return imgs
     except Exception:
         logger.exception("Ha ocurrido una excepción durante la petición")
