@@ -245,6 +245,32 @@ def get_invisible_vals(type):
         return render_template('500.html'), 500
 
 
+@app.route("/imagenes", methods=["GET"])
+def get_all_imagenes():
+    """
+    Devuelve todas las imágenes ocultas para todos los elementos.
+    """
+    logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                "Devuelve todas las valoraciones ocultas")
+    try:
+        cx = db.connect()
+        r = imagenes.get_all_invisible_imgs(cx)
+        cx.close
+        if r is None:
+            return render_template('500.html', errcode='IMG.GET_INV_IMGS'), 500
+        elif r is False:
+            return render_template('400.html'), 400
+        return jsonify(r)
+    except OperationalError:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido un error con la base de datos")
+        return render_template('500.html', errcode='SQL'), 500
+    except Exception:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido una excepción durante la petición")
+        return render_template('500.html'), 500
+
+
 @app.route("/update_val/<type>/<int:id>", methods=["GET"])
 @auth.login_required
 def update_val(type, id):

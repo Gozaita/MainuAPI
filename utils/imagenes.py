@@ -59,6 +59,55 @@ def get_imgs(type, id, cx):
         return None
 
 
+def get_invisible_imgs(type, cx):
+    try:
+        if type == 'bocadillos':
+            ft = 'FotoBocadillo'
+        elif type == 'menu':
+            ft = 'FotoPlato'
+        elif type == 'otros':
+            ft = 'FotoOtro'
+        else:
+            logger.error("El tipo que se ha pasado no es válido")
+            return False
+
+        ims = cx.execute("SELECT f.id, f.ruta, f.Usuario_id, " +
+                         "u.nombre, u.foto, u.verificado FROM %s AS f " % ft +
+                         "INNER JOIN Usuario AS u ON u.id=Usuario_id " +
+                         "WHERE visible=False")
+        imgs = []
+        if ims is not None:
+            for i in ims:
+                us = {'id': i['Usuario_id'], 'nombre': i['nombre'],
+                      'foto': i['foto'], 'verificado': i['verificado']}
+                img = {'id': i['id'], 'ruta': i['ruta'], 'usuario': us}
+                imgs.append(img)
+        return imgs
+    except Exception:
+        logger.exception("Ha ocurrido una excepción durante la petición")
+        return None
+
+
+def append_imgs(imgs, type, cx):
+        n_imgs = get_invisible_imgs(type, cx)
+        for i in n_imgs:
+            i['type'] = type
+            imgs.append(i)
+        return imgs
+
+
+def get_all_invisible_imgs(cx):
+    try:
+        imgs = []
+        imgs = append_imgs(imgs, 'bocadillos', cx)
+        imgs = append_imgs(imgs, 'menu', cx)
+        imgs = append_imgs(imgs, 'otros', cx)
+        return imgs
+    except Exception:
+        logger.exception("Ha ocurrido una excepción durante la petición")
+        return None
+
+
 def crea_nombre(id):
     try:
         timestamp = time.strftime("%Y-%m-%d--%H-%M-%S")
@@ -106,7 +155,7 @@ def update_db(id, type, nombre, cx, userId):
             raise Exception
         cx.execute("INSERT INTO %s " % ft +
                    "(ruta, visible, oficial, %s, Usuario_id) " % cl +
-                   "VALUE (\"%s\", True, True,  %d, \"%s\")"
+                   "VALUE (\"%s\", False, True,  %d, \"%s\")"
                    % (nombre, id, userId))
         cx.close()
         logger.debug("La base de datos se ha actualizado correctamente")

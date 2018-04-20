@@ -189,12 +189,12 @@ def new_val(type, id, valoracion, userId, cx):
         if texto is not None:
             cx.execute("INSERT INTO %s " % vt +
                        "(puntuacion, texto, visible, Usuario_id, %s) " % ct +
-                       "VALUE (%f, \"%s\", True, %s, %d)"
+                       "VALUE (%f, \"%s\", False, %s, %d)"
                        % (puntuacion, texto, userId, id))
         else:
             cx.execute("INSERT INTO %s " % vt +
                        "(puntuacion, visible, Usuario_id, %s) " % ct +
-                       "VALUE (%f, True, %s, %d)"
+                       "VALUE (%f, False, %s, %d)"
                        % (puntuacion, userId, id))
 
         update_punt(ct, vt, cx, id)
