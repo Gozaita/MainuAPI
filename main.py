@@ -55,25 +55,24 @@ def server_error(e):
 #############################################
 
 #############################################
-# Reports usuario
+# Gestión de feedback
 #############################################
 
 
 @app.route('/report', methods=['POST'])
-def add_repost():
+def add_report():
     """
     Añade una nueva sugerencia/error y lo guarda en un fichero
     """
     try:
         data = request.get_json(silent=True)
         report = data['report']
-        report.escribir_fichero(report)
-        return True
+        r = report.write_report(report)
+        return jsonify(r)
     except Exception:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                          "Ha ocurrido una excepción almacenando el report")
         return render_template('500.html'), 500
-
 
 #############################################
 # Imágenes
