@@ -59,6 +59,58 @@ def get_imgs(type, id, cx):
         return None
 
 
+def get_invisible_imgs(type, cx):
+    try:
+        if type == 'bocadillos':
+            ft = 'FotoBocadillo'
+            path = BOC_PATH
+        elif type == 'menu':
+            ft = 'FotoPlato'
+            path = PLT_PATH
+        elif type == 'otros':
+            ft = 'FotoOtro'
+            path = OTH_PATH
+        else:
+            logger.error("El tipo que se ha pasado no es válido")
+            return False
+
+        ims = cx.execute("SELECT f.id, f.ruta, f.Usuario_id, " +
+                         "u.nombre, u.foto, u.verificado FROM %s AS f " % ft +
+                         "INNER JOIN Usuario AS u ON u.id=Usuario_id " +
+                         "WHERE visible=False")
+        imgs = []
+        if ims is not None:
+            for i in ims:
+                img = path + i['ruta']
+                us = {'id': i['Usuario_id'], 'nombre': i['nombre'],
+                      'foto': i['foto'], 'verificado': i['verificado']}
+                imgs.append({'id': i['id'], 'url': img, 'usuario': us})
+        return imgs
+    except Exception:
+        logger.exception("Ha ocurrido una excepción durante la petición")
+        return None
+
+
+def append_imgs(imgs, type, cx):
+        n_imgs = get_invisible_imgs(type, cx)
+        for i in n_imgs:
+            i['type'] = type
+            imgs.append(i)
+        return imgs
+
+
+def get_all_invisible_imgs(cx):
+    try:
+        imgs = []
+        imgs = append_imgs(imgs, 'bocadillos', cx)
+        imgs = append_imgs(imgs, 'menu', cx)
+        imgs = append_imgs(imgs, 'otros', cx)
+        return imgs
+    except Exception:
+        logger.exception("Ha ocurrido una excepción durante la petición")
+        return None
+
+
 def crea_nombre(id):
     try:
         timestamp = time.strftime("%Y-%m-%d--%H-%M-%S")
@@ -69,28 +121,29 @@ def crea_nombre(id):
         return None
 
 
-def envia_img(img, id, type):
+def write_img(img, id, type):
     try:
         if type == 'bocadillos':
-            path = BOC_PATH
+            path = BOCW_PATH
         elif type == 'menu':
-            path = PLT_PATH
+            path = PLTW_PATH
         elif type == 'otros':
-            path = OTH_PATH
+            path = OTHW_PATH
         else:
             raise Exception
-        imagen = base64.decodestring(img)
-        nombre = crea_nombre(id)
-        f = open(path+nombre+'.jpg', "w")
+        imagen = base64.decodebytes(img)
+        nombre = crea_nombre(id) + '.jpg'
+        f = open(path + nombre, "wb")
         f.write(imagen)
         f.close()
-        return True
+        logger.debug("La imagen se ha guardado con el nombre: %s" % nombre)
+        return nombre
     except Exception:
         logger.exception("Ha ocurrido un error")
         return None
 
 
-def envia_URL(id, type, nombre, cx, usr_id):
+def update_db(id, type, nombre, cx, userId):
     try:
         if type == 'bocadillos':
             ft = 'FotoBocadillo'
@@ -105,10 +158,10 @@ def envia_URL(id, type, nombre, cx, usr_id):
             raise Exception
         cx.execute("INSERT INTO %s " % ft +
                    "(ruta, visible, oficial, %s, Usuario_id) " % cl +
-                   "VALUE (%s, False, False,  %d, %d)"
-                   % (nombre, id, usr_id))
+                   "VALUE (\"%s\", False, True,  %d, \"%s\")"
+                   % (nombre, id, userId))
         cx.close()
-        logger.debug("La URL se ha añadido correctamente")
+        logger.debug("La base de datos se ha actualizado correctamente")
         return True
     except Exception:
         logger.exception("Ha ocurrido un error")
