@@ -154,7 +154,7 @@ def get_all_imagenes():
 
 @app.route("/update_img/<type>/<int:id>", methods=["GET"])
 @auth.login_required
-def update_val(type, id):
+def update_img(type, id):
     """
     Cambia el estado de una imagen con <id> especificado del <type>
     que se indique. Se le debe pasar como argumento la acción (action), que
