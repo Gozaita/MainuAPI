@@ -117,7 +117,7 @@ def crea_nombre(id):
         nombre = str(id)+'_'+timestamp
         return nombre
     except Exception:
-        logger.exception("Ha ocurrido una excepción durante la petición")
+        logger.exception("No se ha podido crear el nombre de la imagen")
         return None
 
 
