@@ -111,6 +111,33 @@ def get_all_invisible_imgs(cx):
         return None
 
 
+def update_img(type, id, action, cx):
+    try:
+        if type == 'bocadillos':
+            ft = 'FotoBocadillo'
+        elif type == 'menu':
+            ft = 'FotoPlato'
+        elif type == 'otros':
+            ft = 'FotoOtro'
+        else:
+            logger.error("El tipo que se ha pasado no es válido")
+            return False
+
+        if action == 'visible':
+            cx.execute("UPDATE %s SET visible=True WHERE id=%d" % (ft, id))
+            logger.debug("La foto se ha hecho visible")
+            return True
+        elif action == 'delete':
+            cx.execute("DELETE FROM %s WHERE id=%d" % (ft, id))
+            logger.debug("La imagen se ha borrado de la base de datos")
+            return True
+        else:
+            return False
+    except Exception:
+        logger.exception("Ha ocurrido una excepción durante la petición")
+        return None
+
+
 def crea_nombre(id):
     try:
         timestamp = time.strftime("%Y-%m-%d--%H-%M-%S")
