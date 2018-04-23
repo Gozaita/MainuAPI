@@ -101,6 +101,29 @@ def get_reports():
                          "Ha ocurrido una excepción durante la petición")
         return render_template('500.html'), 500
 
+
+@app.route("/update_rep/<report>", methods=["GET"])
+@auth.login_required
+def update_rep(rep):
+    """
+    Elimina la visibilidad del reporte de usuario.
+    """
+    logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                "Actualiza visibilidad del reporte: %s" % report)
+    try:
+        r = report.update_rep(rep)
+        if r is None:
+            return render_template('500.html', errcode='REP.UPDATE_REP'), 500
+        return jsonify(r)
+    except OperationalError:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido un error con la base de datos")
+        return render_template('500.html', errcode='SQL'), 500
+    except Exception:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido una excepción durante la petición")
+        return render_template('500.html'), 500
+
 #############################################
 # Imágenes
 #############################################

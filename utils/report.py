@@ -28,12 +28,21 @@ def get_reports():
         reports = []
         for file in os.listdir(REPORT_PATH):
             if file.endswith('.txt'):
-                f = open(file, 'r')
+                f = open(REPORT_PATH + file, 'r')
                 contenido = f.read()
-                rep = {'nombre': os.path.basename(file),
+                rep = {'nombre': file[:-4],
                        'contenido': contenido}
                 reports.append(rep)
         return reports
+    except Exception:
+        logger.exception("No se ha podido escribir el report")
+        return None
+
+
+def update_rep(rep):
+    try:
+        os.rename(REPORT_PATH + rep + '.txt', REPORT_PATH + rep + '.old')
+        logger.debug("Visibilidad actualizada")
     except Exception:
         logger.exception("No se ha podido escribir el report")
         return None
