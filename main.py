@@ -55,6 +55,27 @@ def server_error(e):
 #############################################
 
 #############################################
+# Reports usuario
+#############################################
+
+
+@app.route('/report', methods=['POST'])
+def add_repost():
+    """
+    Añade una nueva sugerencia/error y lo guarda en un fichero
+    """
+    try:
+        data = request.get_json(silent=True)
+        report = data['report']
+        report.escribir_fichero(report)
+        return True
+    except Exception:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido una excepción almacenando el report")
+        return render_template('500.html'), 500
+
+
+#############################################
 # Imágenes
 #############################################
 
@@ -68,8 +89,7 @@ def add_image(type, id):
     recuperarla.
     """
     logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
-                "Añade una imagen para: %s, %d" % (type, id))
-    # TODO: add_image(idToken, type, id, image)
+                "Añade una imagen para: %s, id = %d" % (type, id))
     try:
         cx = db.connect()
         data = request.get_json(silent=True)
@@ -91,6 +111,9 @@ def add_image(type, id):
                 else:
                     logger.warning("No se ha podido añadir el usuario")
                     return render_template('500.html', errcode='USR.ADD'), 500
+        else:
+            logger.warning("El usuario no ha podido ser verificado")
+            return render_template('400.html', expl=config.BAD_IDTOKEN), 400
     except Exception:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                          "Ha ocurrido una excepción durante la operación")
