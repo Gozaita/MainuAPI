@@ -4,6 +4,7 @@ from flask_httpauth import HTTPBasicAuth
 from sqlalchemy import create_engine
 from sqlalchemy.exc import OperationalError
 from utils import config, updates, usuarios, bocadillos, imagenes, valoraciones
+from utils import report
 from utils import logger as log
 import logging
 
@@ -66,8 +67,8 @@ def add_report():
     """
     try:
         data = request.get_json(silent=True)
-        report = data['report']
-        r = report.write_report(report)
+        rep = data['report']
+        r = report.write_report(rep)
         return jsonify(r)
     except Exception:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
