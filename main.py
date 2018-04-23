@@ -85,29 +85,34 @@ def add_image(type, id):
     """
     Añade una nueva foto del tipo <type> (bocadillo, menu, otros). Debe recibir
     en formato JSON el idToken y la imagen condificada en base64. Guarda la
-    imágen en el fichero correspondiente y se añade una URL en la BD para poder
+    imagen en el fichero correspondiente y se añade una URL en la BD para poder
     recuperarla.
     """
     logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
-                "Añade una imagen para: %s, id = %d" % (type, id))
+                "Añade una imagen para: %s, %d" % (type, id))
     try:
         cx = db.connect()
         data = request.get_json(silent=True)
         idToken = data['idToken']
-        img = data['imagen']
+        img = data['imagen'].encode('utf-8')
         usuario = usuarios.verify_token(idToken)
         if usuario is not None:
             u = usuarios.user_exists(usuario['id'], cx)
             if u is not None:
-                nombre = imagenes.envia_img(img, id)
-                imagenes.envia_URL(id, type, nombre, cx, usuario['id'])
+                nombre = imagenes.write_img(img, id, type)
+                if nombre is None:
+                    raise Exception
+                imagenes.update_db(id, type, nombre, cx, usuario['id'])
+                return jsonify(True)
             else:
                 r = usuarios.add_user(usuario['id'], usuario['nombre'],
                                       usuario['mail'], usuario['foto'], cx)
                 if r is not None:
-                    nombre = imagenes.envia_img(img, id)
-                    imagenes.envia_URL(id, type, nombre, cx, usuario['id'])
-                    return jsonify(r)
+                    nombre = imagenes.write_img(img, id, type)
+                    if nombre is None:
+                        raise Exception
+                    imagenes.update_db(id, type, nombre, cx, usuario['id'])
+                    return jsonify(True)
                 else:
                     logger.warning("No se ha podido añadir el usuario")
                     return render_template('500.html', errcode='USR.ADD'), 500
@@ -209,6 +214,33 @@ def get_val(type, id):
         return render_template('500.html'), 500
 
 
+@app.route("/valoraciones", methods=["GET"])
+@auth.login_required
+def get_all_invisible_vals():
+    """
+    Devuelve todas las valoraciones ocultas para todos los elementos.
+    """
+    logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                "Devuelve todas las valoraciones ocultas")
+    try:
+        cx = db.connect()
+        r = valoraciones.get_all_invisible_vals(cx)
+        cx.close
+        if r is None:
+            return render_template('500.html', errcode='VAL.GET_INV_VALS'), 500
+        elif r is False:
+            return render_template('400.html'), 400
+        return jsonify(r)
+    except OperationalError:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido un error con la base de datos")
+        return render_template('500.html', errcode='SQL'), 500
+    except Exception:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido una excepción durante la petición")
+        return render_template('500.html'), 500
+
+
 @app.route("/valoraciones/<type>", methods=["GET"])
 @auth.login_required
 def get_invisible_vals(type):
@@ -226,6 +258,32 @@ def get_invisible_vals(type):
             return render_template('500.html', errcode='VAL.GET_INV_VALS'), 500
         elif r is False:
             return render_template('400.html', expl=config.BAD_TYPE), 400
+        return jsonify(r)
+    except OperationalError:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido un error con la base de datos")
+        return render_template('500.html', errcode='SQL'), 500
+    except Exception:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido una excepción durante la petición")
+        return render_template('500.html'), 500
+
+
+@app.route("/imagenes", methods=["GET"])
+def get_all_imagenes():
+    """
+    Devuelve todas las imágenes ocultas para todos los elementos.
+    """
+    logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                "Devuelve todas las valoraciones ocultas")
+    try:
+        cx = db.connect()
+        r = imagenes.get_all_invisible_imgs(cx)
+        cx.close
+        if r is None:
+            return render_template('500.html', errcode='IMG.GET_INV_IMGS'), 500
+        elif r is False:
+            return render_template('400.html'), 400
         return jsonify(r)
     except OperationalError:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
