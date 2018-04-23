@@ -61,10 +61,13 @@ def server_error(e):
 
 
 @app.route('/report', methods=['POST'])
+@auth.login_required
 def add_report():
     """
     Añade una nueva sugerencia/error y lo guarda en un fichero
     """
+    logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                "Añade una sugerencia/error")
     try:
         data = request.get_json(silent=True)
         rep = data['report']
@@ -73,6 +76,29 @@ def add_report():
     except Exception:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                          "Ha ocurrido una excepción almacenando el report")
+        return render_template('500.html'), 500
+
+
+@app.route("/reports", methods=["GET"])
+@auth.login_required
+def get_reports():
+    """
+    Devuelve todos los reportes de usuarios.
+    """
+    logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                "Devuelve todas las sugerencias/errores")
+    try:
+        r = report.get_reports()
+        if r is None:
+            return render_template('500.html', errcode='REP.GET_REPS'), 500
+        return jsonify(r)
+    except OperationalError:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido un error con la base de datos")
+        return render_template('500.html', errcode='SQL'), 500
+    except Exception:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido una excepción durante la petición")
         return render_template('500.html'), 500
 
 #############################################
