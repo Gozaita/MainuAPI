@@ -43,6 +43,7 @@ def update_rep(rep):
     try:
         os.rename(REPORT_PATH + rep + '.txt', REPORT_PATH + rep + '.old')
         logger.debug("Visibilidad actualizada")
+        return True
     except Exception:
         logger.exception("No se ha podido escribir el report")
         return None

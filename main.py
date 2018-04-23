@@ -4,7 +4,7 @@ from flask_httpauth import HTTPBasicAuth
 from sqlalchemy import create_engine
 from sqlalchemy.exc import OperationalError
 from utils import config, updates, usuarios, bocadillos, imagenes, valoraciones
-from utils import report
+from utils import report, platos
 from utils import logger as log
 import logging
 
@@ -102,7 +102,7 @@ def get_reports():
         return render_template('500.html'), 500
 
 
-@app.route("/update_rep/<report>", methods=["GET"])
+@app.route("/update_rep/<rep>", methods=["GET"])
 @auth.login_required
 def update_rep(rep):
     """
@@ -478,6 +478,84 @@ def get_bocadillo_by_id(id):
 #############################################
 
 
+@app.route("/platos", methods=["GET"])
+@auth.login_required
+def get_all_platos():
+    """
+    Devuelve todos los platos disponibles
+    """
+    logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                "Devuelve todos los platos disponibles")
+    try:
+        cx = db.connect()
+        plts = cx.execute("SELECT * FROM Plato")
+        plts_final = []
+        for p in plts:
+            pl = {'id': p['id'], 'nombre': p['nombre'], 'tipo': p['tipo']}
+            plts_final.append(pl)
+        cx.close()
+        return jsonify(plts_final)
+    except OperationalError:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido un error con la base de datos")
+        return render_template('500.html', errcode='SQL'), 500
+    except Exception:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido una excepción durante la petición")
+        return render_template('500.html'), 500
+
+
+@app.route("/add_plato", methods=["POST"])
+@auth.login_required
+def add_plato():
+    """
+    Añade un nuevo plato a la lista disponible
+    """
+    logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                "Añade plato")
+    try:
+        data = request.get_json(silent=True)
+        nombre = data['nombre']
+        tipo = data['tipo']
+        cx = db.connect()
+        r = platos.new_plato(nombre, tipo, cx)
+        cx.close()
+        return jsonify(r)
+    except OperationalError:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido un error con la base de datos")
+        return render_template('500.html', errcode='SQL'), 500
+    except Exception:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido una excepción almacenando el report")
+        return render_template('500.html'), 500
+
+
+@app.route("/update_menu", methods=["POST"])
+@auth.login_required
+def update_menu():
+    """
+    Actualiza el menú del día
+    """
+    logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                "Actualiza el menú del día")
+    try:
+        data = request.get_json(silent=True)
+        ids = data['menu']
+        cx = db.connect()
+        r = platos.update_menu(ids, cx)
+        cx.close()
+        return jsonify(r)
+    except OperationalError:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido un error con la base de datos")
+        return render_template('500.html', errcode='SQL'), 500
+    except Exception:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido una excepción almacenando el report")
+        return render_template('500.html'), 500
+
+
 @app.route("/menu", methods=["GET"])
 def get_menu():
     """
@@ -677,4 +755,4 @@ def api_main():
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(port=5000)
