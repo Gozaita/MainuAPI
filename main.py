@@ -61,7 +61,6 @@ def server_error(e):
 
 
 @app.route('/report', methods=['POST'])
-@auth.login_required
 def add_report():
     """
     Añade una nueva sugerencia/error y lo guarda en un fichero
