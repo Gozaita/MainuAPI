@@ -147,7 +147,8 @@ def get_val(type, id, userId, cx):
             vt = 'ValoracionOtro'
             ct = 'Otro_id'
         else:
-            raise Exception
+            logger.error("El tipo que se ha pasado no es válido")
+            return False
 
         v = cx.execute('SELECT id, puntuacion, texto FROM %s ' % vt +
                        'WHERE %s=%d ' % (ct, id) +
@@ -181,7 +182,8 @@ def new_val(type, id, valoracion, userId, cx):
             vt = 'ValoracionOtro'
             ct = 'Otro_id'
         else:
-            raise Exception
+            logger.error("El tipo que se ha pasado no es válido")
+            return False
 
         puntuacion = float(valoracion['puntuacion'])
         texto = valoracion.get('texto', None)
@@ -220,7 +222,9 @@ def update_punt(ct, vt, cx, id):
         elif vt == 'ValoracionOtro':
             tabla = 'Otro'
         else:
-            raise Exception
+            logger.error("El tipo que se ha pasado no es válido")
+            return False
+
         vls = cx.execute("SELECT v.puntuacion FROM %s AS v " % vt +
                          "WHERE %s=%d" % (ct, id)).fetchall()
         if vls is not None:
