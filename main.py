@@ -268,9 +268,11 @@ def add_val(type, id):
                 r = valoraciones.new_val(type, id, valoracion, usuario['id'],
                                          cx)
                 if r is None:
-                    return render_template('500.html', errcode='VAL.ADD_VAL'), 500
+                    return (render_template('500.html', errcode='VAL.ADD_VAL'),
+                            500)
                 elif r is False:
-                    return render_template('400.html', expl=config.BAD_TYPE), 400
+                    return (render_template('400.html', expl=config.BAD_TYPE),
+                            400)
                 return jsonify(r)
             else:
                 r = usuarios.add_user(usuario['id'], usuario['nombre'],
@@ -279,11 +281,11 @@ def add_val(type, id):
                     r = valoraciones.new_val(type, id, valoracion,
                                              usuario['id'], cx)
                     if r is None:
-                        return (render_template('500.html', errcode='VAL.ADD_VAL'),
-                                500)
+                        return (render_template('500.html',
+                                                errcode='VAL.ADD_VAL'), 500)
                     elif r is False:
-                        return (render_template('400.html', expl=config.BAD_TYPE),
-                                400)
+                        return (render_template('400.html',
+                                                expl=config.BAD_TYPE), 400)
                     return jsonify(r)
                 else:
                     logger.warning("No se ha podido añadir el usuario")
