@@ -7,6 +7,42 @@ TRASH = config.get('PATH', 'root') + config.get('PATH', 'trash')
 logger = logging.getLogger(__name__)
 
 
+def update_punt(cl, vt, id, cx):
+    """
+    Crea una lista de todos las puntuaciones y calcula la media para luego
+    actualizarlo en la tabla=vt, id=cl
+    """
+    logger.debug("Actualiza la puntuación")
+    try:
+        if vt == 'ValoracionBocadillo':
+            tabla = 'Bocadillo'
+        elif vt == 'ValoracionPlato':
+            tabla = 'Plato'
+        elif vt == 'ValoracionOtro':
+            tabla = 'Otro'
+        else:
+            logger.error("El tipo que se ha pasado no es válido")
+            return False
+
+        vls = cx.execute("SELECT v.puntuacion FROM %s AS v " % vt +
+                         "WHERE %s=%d" % (cl, id)).fetchall()
+        if vls is not None:
+            i = 0
+            p = 0
+            while(i < len(vls)):
+                p = p + float(vls[i]['puntuacion'])
+                i = i + 1
+        punt = p / len(vls)
+        cx.execute("UPDATE %s SET puntuacion=%f WHERE id=%d"
+                   % (tabla, punt, id))
+        logger.debug("Puntuación actualizada para (%s, %d): %f" % (tabla, id,
+                                                                   punt))
+        return True
+    except Exception:
+        logger.exception("Ha ocurrido una excepción")
+        return None
+
+
 def get_vals(type, id, cx):
     """
     Devuelve todas las valoraciones asociadas a un elemento con un <id> del
@@ -100,10 +136,13 @@ def update_val(type, id, action, cx):
     try:
         if type == 'bocadillos':
             vt = 'ValoracionBocadillo'
+            cl = 'Bocadillo_id'
         elif type == 'menu':
             vt = 'ValoracionPlato'
+            cl = 'Plato_id'
         elif type == 'otros':
             vt = 'ValoracionOtro'
+            cl = 'Otro_id'
         else:
             logger.error("El tipo que se ha pasado no es válido")
             return False
@@ -111,7 +150,10 @@ def update_val(type, id, action, cx):
         if action == 'visible':
             cx.execute("UPDATE %s SET visible=True WHERE id=%d" % (vt, id))
             logger.debug("La valoración se ha hecho visible")
-            return True
+            update_punt(cl, vt, id, cx)
+            obj = cx.execute("SELECT %s FROM %s WHERE id=%d"
+                             % (cl, vt, id)).fetchone()
+            return True, obj[cl]
         elif action == 'delete':
             val = cx.execute("SELECT * FROM %s WHERE id=%d"
                              % (vt, id)).fetchone()
@@ -139,19 +181,19 @@ def get_val(type, id, userId, cx):
     try:
         if type == 'bocadillos':
             vt = 'ValoracionBocadillo'
-            ct = 'Bocadillo_id'
+            cl = 'Bocadillo_id'
         elif type == 'menu':
             vt = 'ValoracionPlato'
-            ct = 'Plato_id'
+            cl = 'Plato_id'
         elif type == 'otros':
             vt = 'ValoracionOtro'
-            ct = 'Otro_id'
+            cl = 'Otro_id'
         else:
             logger.error("El tipo que se ha pasado no es válido")
             return False
 
         v = cx.execute('SELECT id, puntuacion, texto FROM %s ' % vt +
-                       'WHERE %s=%d ' % (ct, id) +
+                       'WHERE %s=%d ' % (cl, id) +
                        'AND Usuario_id=\"%s\"' % userId).fetchone()
         if v is None:
             return None
@@ -174,13 +216,13 @@ def new_val(type, id, valoracion, userId, cx):
     try:
         if type == 'bocadillos':
             vt = 'ValoracionBocadillo'
-            ct = 'Bocadillo_id'
+            cl = 'Bocadillo_id'
         elif type == 'menu':
             vt = 'ValoracionPlato'
-            ct = 'Plato_id'
+            cl = 'Plato_id'
         elif type == 'otros':
             vt = 'ValoracionOtro'
-            ct = 'Otro_id'
+            cl = 'Otro_id'
         else:
             logger.error("El tipo que se ha pasado no es válido")
             return False
@@ -190,55 +232,17 @@ def new_val(type, id, valoracion, userId, cx):
 
         if texto is not None:
             cx.execute("INSERT INTO %s " % vt +
-                       "(puntuacion, texto, visible, Usuario_id, %s) " % ct +
+                       "(puntuacion, texto, visible, Usuario_id, %s) " % cl +
                        "VALUE (%f, \"%s\", False, %s, %d)"
                        % (puntuacion, texto, userId, id))
         else:
             cx.execute("INSERT INTO %s " % vt +
-                       "(puntuacion, visible, Usuario_id, %s) " % ct +
+                       "(puntuacion, visible, Usuario_id, %s) " % cl +
                        "VALUE (%f, False, %s, %d)"
                        % (puntuacion, userId, id))
-
-        update_punt(ct, vt, cx, id)
         cx.close()
         logger.debug("La valoración se ha añadido")
         return True
     except Exception:
         logger.exception("Ha ocurrido una excepción durante la petición")
-        return None
-
-
-def update_punt(ct, vt, cx, id):
-    """
-    Crea una lista de todos las puntuaciones y calcula la media para luego
-    actualizarlo en la tabla=vt, id=ct
-    """
-    logger.debug("Actualiza la puntuación")
-    try:
-        if vt == 'ValoracionBocadillo':
-            tabla = 'Bocadillo'
-        elif vt == 'ValoracionPlato':
-            tabla = 'Plato'
-        elif vt == 'ValoracionOtro':
-            tabla = 'Otro'
-        else:
-            logger.error("El tipo que se ha pasado no es válido")
-            return False
-
-        vls = cx.execute("SELECT v.puntuacion FROM %s AS v " % vt +
-                         "WHERE %s=%d" % (ct, id)).fetchall()
-        if vls is not None:
-            i = 0
-            p = 0
-            while(i < len(vls)):
-                p = p + float(vls[i]['puntuacion'])
-                i = i + 1
-        punt = p / len(vls)
-        cx.execute("UPDATE %s SET puntuacion=%f WHERE id=%d"
-                   % (tabla, punt, id))
-        logger.debug("Puntuación actualizada para (%s, %d): %f" % (tabla, id,
-                                                                   punt))
-        return True
-    except Exception:
-        logger.exception("Ha ocurrido una excepción")
         return None

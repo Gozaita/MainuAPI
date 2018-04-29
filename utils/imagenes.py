@@ -115,10 +115,13 @@ def update_img(type, id, action, cx):
     try:
         if type == 'bocadillos':
             ft = 'FotoBocadillo'
+            cl = 'Bocadillo_id'
         elif type == 'menu':
             ft = 'FotoPlato'
+            cl = 'Plato_id'
         elif type == 'otros':
             ft = 'FotoOtro'
+            cl = 'Otro_id'
         else:
             logger.error("El tipo que se ha pasado no es válido")
             return False
@@ -126,7 +129,9 @@ def update_img(type, id, action, cx):
         if action == 'visible':
             cx.execute("UPDATE %s SET visible=True WHERE id=%d" % (ft, id))
             logger.debug("La foto se ha hecho visible")
-            return True
+            obj = cx.execute("SELECT %s FROM %s WHERE id=%d"
+                             % (cl, ft, id)).fetchone()
+            return True, obj[cl]
         elif action == 'delete':
             cx.execute("DELETE FROM %s WHERE id=%d" % (ft, id))
             logger.debug("La imagen se ha borrado de la base de datos")

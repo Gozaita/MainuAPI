@@ -184,7 +184,7 @@ def get_all_imagenes():
     try:
         cx = db.connect()
         r = imagenes.get_all_invisible_imgs(cx)
-        cx.close
+        cx.close()
         if r is None:
             return render_template('500.html', errcode='IMG.GET_INV_IMGS'), 500
         elif r is False:
@@ -219,12 +219,13 @@ def update_img(type, id):
             logger.warning("La acción que se ha pasado no es válida")
             return render_template('400.html', expl=config.BAD_ACTION), 400
         cx = db.connect()
-        r = imagenes.update_img(type, id, action, cx)
+        r, obj = imagenes.update_img(type, id, action, cx)
+        cx.close()
         if r is None:
             return render_template('500.html', errcode='IMG.UPDATE_VAL'), 500
         elif r is False:
             return render_template('400.html', expl=config.BAD_TYPE), 400
-        cx.close
+        updates.modify_last_update(type, obj)
         return jsonify(r)
     except OperationalError:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
@@ -251,12 +252,12 @@ def add_val(type, id):
     logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                 "Añade una valoración en: %s, %d" % (type, id))
     try:
-        cx = db.connect()
         data = request.get_json(silent=True)
         idToken = data['idToken']
         valoracion = data['valoracion']
         usuario = usuarios.verify_token(idToken)
         if usuario is not None:
+            cx = db.connect()
             u = usuarios.user_exists(usuario['id'], cx)
             if u is not None:
                 # TODO: Actualizar datos de la BD si son diferentes (foto...)
@@ -264,9 +265,11 @@ def add_val(type, id):
                 if val is not None:
                     logger.warning("Ya existe una valoración del usuario " +
                                    "para este elemento.")
+                    cx.close()
                     return render_template('400.html', expl=config.VAL_EX), 400
                 r = valoraciones.new_val(type, id, valoracion, usuario['id'],
                                          cx)
+                cx.close()
                 if r is None:
                     return (render_template('500.html', errcode='VAL.ADD_VAL'),
                             500)
@@ -280,6 +283,7 @@ def add_val(type, id):
                 if r is not None:
                     r = valoraciones.new_val(type, id, valoracion,
                                              usuario['id'], cx)
+                    cx.close()
                     if r is None:
                         return (render_template('500.html',
                                                 errcode='VAL.ADD_VAL'), 500)
@@ -288,6 +292,7 @@ def add_val(type, id):
                                                 expl=config.BAD_TYPE), 400)
                     return jsonify(r)
                 else:
+                    cx.close()
                     logger.warning("No se ha podido añadir el usuario")
                     return render_template('500.html', errcode='USR.ADD'), 500
         else:
@@ -348,7 +353,7 @@ def get_all_invisible_vals():
     try:
         cx = db.connect()
         r = valoraciones.get_all_invisible_vals(cx)
-        cx.close
+        cx.close()
         if r is None:
             return render_template('500.html', errcode='VAL.GET_INV_VALS'), 500
         elif r is False:
@@ -383,12 +388,13 @@ def update_val(type, id):
             logger.warning("La acción que se ha pasado no es válida")
             return render_template('400.html', expl=config.BAD_ACTION), 400
         cx = db.connect()
-        r = valoraciones.update_val(type, id, action, cx)
+        r, obj = valoraciones.update_val(type, id, action, cx)
+        cx.close()
         if r is None:
             return render_template('500.html', errcode='VAL.UPDATE_VAL'), 500
         elif r is False:
             return render_template('400.html', expl=config.BAD_TYPE), 400
-        cx.close
+        updates.modify_last_update(type, obj)
         return jsonify(r)
     except OperationalError:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
@@ -414,6 +420,7 @@ def get_ingredientes():
     try:
         cx = db.connect()
         ings = bocadillos.get_ings_all(cx)
+        cx.close()
         return jsonify(ings)
     except OperationalError:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
@@ -556,6 +563,7 @@ def update_menu():
         cx = db.connect()
         r = platos.update_menu(ids, cx)
         cx.close()
+        updates.modify_last_update('menu')
         return jsonify(r)
     except OperationalError:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
