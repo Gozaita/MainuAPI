@@ -136,6 +136,12 @@ def update_img(type, id, action, cx):
             cx.execute("DELETE FROM %s WHERE id=%d" % (ft, id))
             logger.debug("La imagen se ha borrado de la base de datos")
             return True
+        elif action == 'oficial':
+            cx.execute("UPDATE %s SET oficial=True WHERE id=%d" % (ft, id))
+            logger.debug("La imagen se ha hecho oficial")
+            obj = cx.execute("SELECT %s FROM %s WHERE id=%d"
+                             % (cl, ft, id)).fetchone()
+            return True, obj[cl]
         else:
             return False
     except Exception:

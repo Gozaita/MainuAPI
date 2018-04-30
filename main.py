@@ -74,7 +74,7 @@ def add_report():
         return jsonify(r)
     except Exception:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
-                         "Ha ocurrido una excepción almacenando el report")
+                         "Ha ocurrido una excepción durante la petición")
         return render_template('500.html'), 500
 
 
@@ -215,7 +215,8 @@ def update_img(type, id):
         if action is None:
             logger.warning("No se ha pasado una acción como parámetro")
             return render_template('400.html', expl=config.BAD_ACTION), 400
-        elif action != 'visible' and action != 'delete':
+        elif (action != 'visible' and action != 'delete'
+              and action != 'oficial'):
             logger.warning("La acción que se ha pasado no es válida")
             return render_template('400.html', expl=config.BAD_ACTION), 400
         cx = db.connect()
@@ -226,6 +227,8 @@ def update_img(type, id):
         elif r is False:
             return render_template('400.html', expl=config.BAD_TYPE), 400
         updates.modify_last_update(type, obj)
+        if type == 'otros':
+            updates.modify_last_update(type)
         return jsonify(r)
     except OperationalError:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
