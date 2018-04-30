@@ -128,7 +128,7 @@ def update_img(type, id, action, cx):
             path = OTHW_PATH
         else:
             logger.error("El tipo que se ha pasado no es válido")
-            return False
+            return False, None
 
         if action == 'visible':
             cx.execute("UPDATE %s SET visible=True WHERE id=%d" % (ft, id))
@@ -142,7 +142,7 @@ def update_img(type, id, action, cx):
             cx.execute("DELETE FROM %s WHERE id=%d" % (ft, id))
             os.rename(path + ruta, 'del_' + path + ruta)
             logger.debug("La imagen se ha borrado de la base de datos")
-            return True
+            return True, None
         elif action == 'oficial':
             cx.execute("UPDATE %s SET oficial=False WHERE oficial=True " % ft +
                        "AND %s=%d" % (cl, id))
@@ -152,10 +152,10 @@ def update_img(type, id, action, cx):
                              % (cl, ft, id)).fetchone()
             return True, obj[cl]
         else:
-            return False
+            return False, None
     except Exception:
         logger.exception("Ha ocurrido una excepción durante la petición")
-        return None
+        return None, None
 
 
 def crea_nombre(id):

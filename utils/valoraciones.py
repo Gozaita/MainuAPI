@@ -145,7 +145,7 @@ def update_val(type, id, action, cx):
             cl = 'Otro_id'
         else:
             logger.error("El tipo que se ha pasado no es válido")
-            return False
+            return False, None
 
         if action == 'visible':
             cx.execute("UPDATE %s SET visible=True WHERE id=%d" % (vt, id))
@@ -165,12 +165,12 @@ def update_val(type, id, action, cx):
             v.close()
             cx.execute("DELETE FROM %s WHERE id=%d" % (vt, id))
             logger.debug("La valoración se ha borrado")
-            return True
+            return True, None
         else:
-            return False
+            return False, None
     except Exception:
         logger.exception("Ha ocurrido una excepción durante la petición")
-        return None
+        return None, None
 
 
 def get_val(type, id, userId, cx):
