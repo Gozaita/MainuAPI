@@ -226,9 +226,10 @@ def update_img(type, id):
             return render_template('500.html', errcode='IMG.UPDATE_VAL'), 500
         elif r is False:
             return render_template('400.html', expl=config.BAD_TYPE), 400
-        updates.modify_last_update(type, obj)
-        if type == 'otros':
-            updates.modify_last_update(type)
+        if obj is not None:
+            updates.modify_last_update(type, obj)
+            if type == 'otros':
+                updates.modify_last_update(type)
         return jsonify(r)
     except OperationalError:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
@@ -397,7 +398,8 @@ def update_val(type, id):
             return render_template('500.html', errcode='VAL.UPDATE_VAL'), 500
         elif r is False:
             return render_template('400.html', expl=config.BAD_TYPE), 400
-        updates.modify_last_update(type, obj)
+        if obj is not None:
+            updates.modify_last_update(type, obj)
         return jsonify(r)
     except OperationalError:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +

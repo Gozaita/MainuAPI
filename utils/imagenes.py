@@ -117,15 +117,15 @@ def update_img(type, id, action, cx):
         if type == 'bocadillos':
             ft = 'FotoBocadillo'
             cl = 'Bocadillo_id'
-            path = BOC_PATH
+            path = BOCW_PATH
         elif type == 'menu':
             ft = 'FotoPlato'
             cl = 'Plato_id'
-            path = PLT_PATH
+            path = PLTW_PATH
         elif type == 'otros':
             ft = 'FotoOtro'
             cl = 'Otro_id'
-            path = OTH_PATH
+            path = OTHW_PATH
         else:
             logger.error("El tipo que se ha pasado no es válido")
             return False
