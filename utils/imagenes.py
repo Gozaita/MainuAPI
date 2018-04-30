@@ -3,6 +3,7 @@ from utils import config
 import logging
 import base64
 import time
+import os
 
 SRV_PATH = config.get('IMAGES', 'server')
 IMG_PATH = SRV_PATH + config.get('IMAGES', 'images')
@@ -116,12 +117,15 @@ def update_img(type, id, action, cx):
         if type == 'bocadillos':
             ft = 'FotoBocadillo'
             cl = 'Bocadillo_id'
+            path = BOC_PATH
         elif type == 'menu':
             ft = 'FotoPlato'
             cl = 'Plato_id'
+            path = PLT_PATH
         elif type == 'otros':
             ft = 'FotoOtro'
             cl = 'Otro_id'
+            path = OTH_PATH
         else:
             logger.error("El tipo que se ha pasado no es válido")
             return False
@@ -133,7 +137,10 @@ def update_img(type, id, action, cx):
                              % (cl, ft, id)).fetchone()
             return True, obj[cl]
         elif action == 'delete':
+            ruta = cx.execute("SELECT ruta FROM %s WHERE id=%d"
+                              % (ft, id)).fetchone()['ruta']
             cx.execute("DELETE FROM %s WHERE id=%d" % (ft, id))
+            os.rename(path + ruta, 'del_' + path + ruta)
             logger.debug("La imagen se ha borrado de la base de datos")
             return True
         elif action == 'oficial':
