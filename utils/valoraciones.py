@@ -149,10 +149,10 @@ def update_val(type, id, action, cx):
 
         if action == 'visible':
             cx.execute("UPDATE %s SET visible=True WHERE id=%d" % (vt, id))
-            logger.debug("La valoración se ha hecho visible")
-            update_punt(cl, vt, id, cx)
             obj = cx.execute("SELECT %s FROM %s WHERE id=%d"
                              % (cl, vt, id)).fetchone()
+            update_punt(cl, vt, obj[cl], cx)
+            logger.debug("La valoración se ha hecho visible")
             return True, obj[cl]
         elif action == 'delete':
             val = cx.execute("SELECT * FROM %s WHERE id=%d"
