@@ -108,7 +108,7 @@ def update_rep(rep):
     Elimina la visibilidad del reporte de usuario.
     """
     logger.info("IP: %s\n" % request.environ['REMOTE_ADDR'] +
-                "Actualiza visibilidad del reporte: %s" % report)
+                "Actualiza visibilidad del reporte: %s" % rep)
     try:
         r = report.update_rep(rep)
         if r is None:
