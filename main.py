@@ -91,10 +91,6 @@ def get_reports():
         if r is None:
             return render_template('500.html', errcode='REP.GET_REPS'), 500
         return jsonify(r)
-    except OperationalError:
-        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
-                         "Ha ocurrido un error con la base de datos")
-        return render_template('500.html', errcode='SQL'), 500
     except Exception:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                          "Ha ocurrido una excepción durante la petición")
@@ -167,6 +163,10 @@ def add_image(type, id):
         else:
             logger.warning("El usuario no ha podido ser verificado")
             return render_template('400.html', expl=config.BAD_IDTOKEN), 400
+    except OperationalError:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido un error con la base de datos")
+        return render_template('500.html', errcode='SQL'), 500
     except Exception:
         logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
                          "Ha ocurrido una excepción durante la operación")
