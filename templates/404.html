@@ -1,40 +1,36 @@
 <!DOCTYPE HTML>
 <html>
-	<head>
-		<title>404: MainU API</title>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/main.css') }}" />
-		<link rel="shortcut icon" type="image/png" href="/favicon.png"/>
-	</head>
-	<body id="top">
-
-			<header id="header">
-				<div class="content">
-					<h1>404</h1>
-          <p>La página a la que intentas acceder no existe.</br>
-          Vigila errores de sintaxis comunes como introducir un <i>slash</i></br>
-          fuera de lugar (por ejemplo, <tt>/bocadillos/</tt> en vez de</br> <tt>/bocadillos</tt>).</p>
-					<ul class="actions">
-						<li><a href="https://github.com/mainu4u/MainuAPI/wiki" class="button icon fa-github scrolly">Consulta la wiki</a></li>
-					</ul>
-				</div>
-			</header>
-
-			<footer id="footer">
-				<ul class="icons">
-						<li><a href="https://github.com/mainu4u" class="icon fa-github">
-							<span class="label">GitHub</span></a></li>
-							<li><a href="https://mainu.eus" class="icon fa-globe">
-								<span class="label">MainU</span></a></li>
-				</ul>
-			</footer>
-
-			<script src="{{ url_for('static', filename='assets/js/jquery.min.js') }}"></script>
-			<script src="{{ url_for('static', filename='assets/js/jquery.scrolly.min.js') }}"></script>
-			<script src="{{ url_for('static', filename='assets/js/skel.min.js') }}"></script>
-			<script src="{{ url_for('static', filename='assets/js/util.js') }}"></script>
-			<script src="{{ url_for('static', filename='assets/js/main.js') }}"></script>
-
-	</body>
+<head>
+    <title>MainU API - 404</title>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='assets/css/main.css') }}"/>
+    <link rel="shortcut icon" type="image/png" href="/favicon.png"/>
+    <noscript>
+        <link rel="stylesheet" href="{{ url_for('static', filename='assets/css/noscript.css') }}"/>
+    </noscript>
+</head>
+<body class="is-preload">
+<div id="wrapper">
+    <header id="header" class="alt">
+        <span class="logo"><img src="{{ url_for('static', filename='images/logo.png') }}" alt=""/></span>
+        <h1>404</h1>
+        <p>La página a la que intentas acceder no existe. Vigila errores de sintaxis comunes como introducir un
+            <i>slash</i> fuera de lugar (por ejemplo, <code>/bocadillos/</code> en vez de <code>/bocadillos</code>).</p>
+    </header>
+    <nav id="nav">
+        <ul>
+            <li><a style="color:#333333" href="https://github.com/mainu4u">Ir a Github</a></li>
+            <li><a href="https://mainu.eus">Ir a mainu.eus</a></li>
+        </ul>
+    </nav>
+</div>
+</body>
+<script src="{{ url_for('static', filename='assets/js/jquery.min.js') }}"></script>
+<script src="{{ url_for('static', filename='assets/js/jquery.scrollex.min.js') }}"></script>
+<script src="{{ url_for('static', filename='assets/js/jquery.scrolly.min.js') }}"></script>
+<script src="{{ url_for('static', filename='assets/js/browser.min.js') }}"></script>
+<script src="{{ url_for('static', filename='assets/js/breakpoints.min.js') }}"></script>
+<script src="{{ url_for('static', filename='assets/js/util.js') }}"></script>
+<script src="{{ url_for('static', filename='assets/js/main.js') }}"></script>
 </html>
