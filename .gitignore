@@ -8,6 +8,8 @@ log/
 last_updates/
 reports/
 .trash/
+dist/
 
 #virtual enviroment
 env/
+

@@ -5,3 +5,4 @@ flask
 simplejson
 google-auth
 Flask-HTTPAuth
+flask_httpauth
