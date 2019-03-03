@@ -1,0 +1,7 @@
+requests
+sqlalchemy
+mysqlclient
+flask
+simplejson
+google-auth
+Flask-HTTPAuth
