@@ -75,7 +75,8 @@ def get_vals(type, id, cx):
                 val = {'id': v['id'], 'puntuacion': v['puntuacion'],
                        'texto': v['texto'], 'usuario': us}
                 # TODO: workaround, conseguir insertar '%' con SQLAlchemy
-                val['texto'] = val['texto'].replace('-mn.pctg.-', '%')
+                if val['texto'] is not None:
+                    val['texto'] = val['texto'].replace('-mn.pctg.-', '%')
                 vals.append(val)
 
         return vals
@@ -108,7 +109,8 @@ def get_invisible_vals(type, cx):
                 val = {'id': v['id'], 'puntuacion': v['puntuacion'],
                        'texto': v['texto'], 'usuario': us}
                 # TODO: workaround, conseguir insertar '%' con SQLAlchemy
-                val['texto'] = val['texto'].replace('-mn.pctg.-', '%')
+                if val['texto'] is not None:
+                    val['texto'] = val['texto'].replace('-mn.pctg.-', '%')
                 vals.append(val)
         return vals
     except Exception:
@@ -161,8 +163,6 @@ def update_val(type, id, action, cx):
         elif action == 'delete':
             val = cx.execute("SELECT * FROM %s WHERE id=%d"
                              % (vt, id)).fetchone()
-            # TODO: workaround, conseguir insertar '%' con SQLAlchemy
-            val['texto'] = val['texto'].replace('-mn.pctg.-', '%')
             v = open(TRASH + type + '_' + str(id), 'w')
             v.write("##############################################\n")
             v.write("%s, %d\n" % (type, id))
