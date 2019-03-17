@@ -74,6 +74,8 @@ def get_vals(type, id, cx):
                       'foto': v['foto'], 'verificado': v['verificado']}
                 val = {'id': v['id'], 'puntuacion': v['puntuacion'],
                        'texto': v['texto'], 'usuario': us}
+                # TODO: workaround, conseguir insertar '%' con SQLAlchemy
+                val['texto'] = val['texto'].replace('-mn.pctg.-', '%')
                 vals.append(val)
 
         return vals
@@ -105,6 +107,8 @@ def get_invisible_vals(type, cx):
                       'foto': v['foto'], 'verificado': v['verificado']}
                 val = {'id': v['id'], 'puntuacion': v['puntuacion'],
                        'texto': v['texto'], 'usuario': us}
+                # TODO: workaround, conseguir insertar '%' con SQLAlchemy
+                val['texto'] = val['texto'].replace('-mn.pctg.-', '%')
                 vals.append(val)
         return vals
     except Exception:
@@ -157,6 +161,8 @@ def update_val(type, id, action, cx):
         elif action == 'delete':
             val = cx.execute("SELECT * FROM %s WHERE id=%d"
                              % (vt, id)).fetchone()
+            # TODO: workaround, conseguir insertar '%' con SQLAlchemy
+            val['texto'] = val['texto'].replace('-mn.pctg.-', '%')
             v = open(TRASH + type + '_' + str(id), 'w')
             v.write("##############################################\n")
             v.write("%s, %d\n" % (type, id))
@@ -200,6 +206,8 @@ def get_val(type, id, userId, cx):
         else:
             val = {'id': v['id'], 'puntuacion': v['puntuacion'],
                    'texto': v['texto']}
+            # TODO: workaround, conseguir insertar '%' con SQLAlchemy
+            val['texto'] = val['texto'].replace('-mn.pctg.-', '%')
             return val
     except Exception:
         logger.exception("Ha ocurrido una excepción durante la petición")
@@ -231,6 +239,8 @@ def new_val(type, id, valoracion, userId, cx):
         texto = valoracion.get('texto', None)
 
         if texto is not None:
+            # TODO: workaround, conseguir insertar '%' con SQLAlchemy
+            texto = texto.replace('%', '-mn.pctg.-')
             cx.execute("INSERT INTO %s " % vt +
                        "(puntuacion, texto, visible, Usuario_id, %s) " % cl +
                        "VALUE (%f, \"%s\", False, %s, %d)"
