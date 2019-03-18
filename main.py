@@ -345,6 +345,49 @@ def get_val(type, id):
                          "Ha ocurrido una excepción durante la petición")
         return render_template('500.html'), 500
 
+@app.route("/delete_val/<type>/<int:id>", methods=["POST"])
+def delete_val(type, id):
+    """
+    Elimina la valoración de un usuario para el elemento dado, en caso
+    de que exista. Si no existe, devuelve un error. Se debe especificar
+    el <id> de la valoración.
+    """
+    logger.debug("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                 "Elimina valoración de usuario: %s, %d" % (type, id))
+    try:
+        cx = db.connect()
+        data = request.get_json(silent=True)
+        idToken = data['idToken']
+        usuario = usuarios.verify_token(idToken)
+        if usuario is not None:
+            v = valoraciones.get_val(type, id, usuario['id'], cx)
+            if v is None:
+                logger.warning("No existen valoraciones para este usuario")
+                return render_template('400.html'), 400
+            else:
+                logger.debug("Producto valorado previamente por el usuario")
+                r, obj = valoraciones.update_val(type, id, 'delete', cx)
+                cx.close()
+                if r is None:
+                    return render_template('500.html',
+                                           errcode='VAL.UPDATE_VAL'), 500
+                elif r is False:
+                    return render_template('400.html',
+                                           expl=config.BAD_TYPE), 400
+                if obj is not None:
+                    updates.modify_last_update(type, obj)
+                return jsonify(r)
+        else:
+            logger.warning("El usuario no ha podido ser verificado")
+            return render_template('400.html', expl=config.BAD_IDTOKEN), 400
+    except OperationalError:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido un error con la base de datos")
+        return render_template('500.html', errcode='SQL'), 500
+    except Exception:
+        logger.exception("IP: %s\n" % request.environ['REMOTE_ADDR'] +
+                         "Ha ocurrido una excepción durante la petición")
+        return render_template('500.html'), 500
 
 @app.route("/valoraciones", methods=["GET"])
 @auth.login_required
