@@ -1,16 +1,13 @@
->*Este repositorio contiene la API del proyecto **MainU**. Para el cliente de Android, consulta [**MainU App**](https://github.com/mainu4u/MainuApp). Para una visión global del proyecto, puedes dirigirte a [mainu.eus](http://mainu.eus).*
+>*Este repositorio contiene la API del proyecto **MainU**. Para el cliente de Android, consulta [**MainU App**](https://github.com/mainu4u/MainuApp). Para una visión global del proyecto, puedes dirigirte a [mainu4u](https://github.com/mainu4u).*
 
 <img src=https://i.imgur.com/Wc9VOaZ.png?1 width=150px/>
 
-MainU API
+MainU API ![](https://img.shields.io/badge/maintenance-inactive-inactive)
 ===================
 
 **MainU API** es la interfaz que permite la creación de aplicaciones y servicios a partir de la interacción con la base de datos de MainU. Su ámbito de actuación se centra en la Escuela de Ingeniería de Bilbao (UPV/EHU).
 
 > Desarrollado por Ismael Estalayo, Guillermo Ozaita, Andreea Stanciu y Adrián Vázquez.
->
-> +info: [mainu.eus](http://mainu.eus)
-
 ----------
 
 El proyecto de MainU
